@@ -1,7 +1,7 @@
 # FMD - a classical molecular dynamics library
 
 <p align="center">
-  <img src="docs/images/readme1.jpg"{ width=30% }>
+  <img src="doc/images/readme1.jpg"{ width=30% }>
 </p>
 
 ## About FMD
