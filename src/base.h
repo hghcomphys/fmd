@@ -1,0 +1,241 @@
+/*
+  base.h: This file is part of Free Molecular Dynamics
+
+  Copyright (C) 2019 Arham Amouye Foumani
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+//#define NDEBUG
+#define USE_CSPLINE
+
+#include <float.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
+#include <time.h>
+#include <mpi.h>
+#include <assert.h>
+#include <limits.h>
+#include <complex.h>
+#include <omp.h>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
+
+// Global macroes and symbolic constants
+
+#define INDEX(ic, nc)   ((ic)[0] + (nc)[0]*((ic)[1] + (nc)[1]*(ic)[2]))
+
+#define INVERSEINDEX(i, nc, ic)                                        \
+    ((ic)[0]= (i)%(nc)[0],                                             \
+     (ic)[1]=((i)/(nc)[0])%(nc)[1],                                    \
+     (ic)[2]=((i)/(nc)[0])/(nc)[1])
+
+#define SQR(x)          ((x)*(x))
+#define CUBE(x)         ((x)*(x)*(x))
+
+#define ITERATE(iv, minv, upv)                                         \
+    for ( (iv)[0]=(minv)[0]; (iv)[0]<(upv)[0]; (iv)[0]++ )             \
+        for ( (iv)[1]=(minv)[1]; (iv)[1]<(upv)[1]; (iv)[1]++ )         \
+            for ( (iv)[2]=(minv)[2]; (iv)[2]<(upv)[2]; (iv)[2]++ )
+
+#define SET_jc_IN_DIRECTION(dd)                                        \
+    if (sysp->ns[dd] == 1)                                             \
+    {                                                                  \
+        if ((kc[dd] == -1) || (kc[dd] == sysp->nc[dd]))                \
+            if (sysp->PBC[dd])                                         \
+                jc[dd] = (kc[dd] + sysp->nc[dd]) % sysp->nc[dd];       \
+            else                                                       \
+                continue;                                              \
+        else                                                           \
+            jc[dd] = kc[dd];                                           \
+    }                                                                  \
+    else                                                               \
+        jc[dd] = kc[dd];
+
+#define MAINPROCESS(numprocs)   ((numprocs) - 1)
+#define K_BOLTZMANN                 8.6173303e-5       // (eV / Kelvin)
+#define VACUUM_PERMITTIVITY         1.4185972718e-16   // (amp^2 ps^4 / mass_unit ang^3)
+#define LIGHT_SPEED                 2.9979245800e+06   // (ang / ps)
+#define METER_PER_SECOND            1e-2               // (ang / ps)
+#define PER_OHM_METER               1.6021766208e-17   // (ps^3 amp^2 / mass_unit ang^3)
+#define JOULE_PER_METER2            6.2415091259e-02   // (eV / ang^2)
+#define JOULE_PER_METER3_KELVIN2    6.2415091259e-12   // (eV / ang^3 Kelvin^2)
+#define JOULE_PER_METER3_KELVIN     6.2415091259e-12   // (eV / ang^3 Kelvin)
+#define WATT_PER_METER3_KELVIN      6.2415091259e-24   // (eV / ps ang^3 Kelvin)
+#define WATT_PER_METER_KELVIN       6.2415091259e-4    // (eV / ps ang Kelvin)
+#define MD_MASS_UNIT                9.6485332907e+03   // x unified atomic mass unit
+#define PASCAL                      6.2415091259e-12   // (mass_unit / ang ps^2)
+#define MD_CHARGE_UNIT              1.2657711566e-10   // x (electrostatic unit of charge (esu) = statcoulomb)
+#define E_CHARGE                    3.7946864629e+00   // electron charge in MD electric charge unit
+#define E_MASS                      5.6856300621e-08   // electron mass in MD mass unit
+#define HBAR                        6.5821195136e-04   // Planck constant devided by 2*pi in MD units (eV ps)
+#define GRAM_PER_CM3                6.2415091259e-05   // x (mass_unit / ang^3)
+#define MAX_PATH_LENGTH             256
+
+// error codes
+#define ERROR_NC_TOO_SMALL                      1
+#define ERROR_UNEXPECTED_PARTICLE_POSITION      2
+#define ERROR_UNABLE_OPEN_FILE                  3
+#define ERROR_UNSUITABLE_FILE                   4
+
+// Typedefs
+
+typedef struct
+{
+    double x[3];
+    double v[3];
+    double x_bak[3];
+    double v_bak[3];
+    float LocOrdParam;
+    float x_avgd[3];
+    int elementID;
+    int groupID;
+} TParticle;
+
+typedef struct TParticleListItem
+{
+    TParticle P;
+    double F[3];
+    double FembPrime;
+    float LocOrdParamAvg;
+    struct TParticleListItem *next_p;
+} TParticleListItem;
+
+typedef TParticleListItem *TCell;
+
+typedef struct
+{
+    float x[3];
+    float var;
+    int elementID;
+} TXYZ_Struct;
+
+typedef struct
+{
+    double x[3];
+    int elementID;
+    int groupID;
+} TPosition_Struct;
+
+typedef struct
+{
+    TCell ***grid;              // where the particles lie
+    int myrank;                 // rank of the local process in MD_comm
+    int numprocs;               // number of processes in MD_comm
+    int is[3];                  // position of subdomain in the subdomain grid
+    int rank_of_lower_subd[3];  // rank of the neighbor processes
+    int rank_of_upper_subd[3];
+    int ic_start[3];            // width of margin, corresponds to the first
+                                // local index in the interior of the subdomain
+    int ic_stop[3];             // first local index in the upper margin
+    int cell_num[3];            // number of cells in subdomain, including margin
+    int ic_global_firstcell[3]; // global index of the first cell of the subdomain
+    int numberOfParticles;
+} TSubDomain;
+
+typedef struct
+{
+    double mass;
+    double latticeParameter;
+    double *F;
+    double *F_DD;
+    double *rho;
+    double *rhoDD;
+    double **phi;
+    double **phiDD;
+    char name[3];
+} TElement;
+
+typedef struct
+{
+    TElement *elements;
+    double drho, dr, dr2, cutoff;
+    int elementsNo;
+    int Nrho, Nr, Nr2;
+} TEAM;
+
+typedef enum
+    {scmXYZParticlesNum, scmXYZSeparate, scmCSV, scmVTF} TSaveConfigMode;
+
+typedef struct
+{
+    TSubDomain subDomain;
+    TEAM EAM;
+    TCell ***global_grid;
+    int globalGridExists;
+    int boxSizeDetermined;
+    int PBCdetermined;
+    double cutoffRadius;
+    double mdTime;
+    double delta_t;
+    int totalNoOfParticles;
+    double globalTemperature;
+    int isMDprocess;
+    int LOPiteration;               // must be initialized with zero
+    MPI_Comm MD_comm;
+    double totalKineticEnergy;
+    double totalPotentialEnergy;
+    double totalMDEnergy;
+    int world_rank;
+    int world_numprocs;
+    double desiredTemperature;
+    int PBC[3];
+    int ns[3];                      // number of subdomains = ns[0] x ns[1] x ns[2]
+    int threadsNumPerSubdomain;
+    double l[3];                    // size of the simulation box
+    int nc[3];                      // number of grid cells in the simulation box
+    double cellh[3];                // size of one single grid cell
+    int useAutoStep;
+    double autoStepSensitivity;
+    char saveDirectory[MAX_PATH_LENGTH];
+    double BerendsenThermostatParam;
+    int iCompLocOrdParam;           // compute local order parameter?
+    int locOrdParamPeriod;
+    TSaveConfigMode saveConfigMode;
+    FILE *configFilep;
+    double wallTimeOrigin;
+    int activeGroup;
+    int activeGroupParticlesNum;
+    double totalMomentum[3];
+    int particlesDistributed;
+    int _oldNumberOfParticles;
+    int _fileIndex;
+    double _oldTotalMDEnergy;
+    double _prevFailedMDEnergy;
+} TSystem;
+
+// Functions
+
+void fmd_subd_init(TSystem *sysp);
+void fmd_box_createGrid(TSystem *sysp, double cutoff);
+void fmd_dync_setBerendsenThermostatParameter(TSystem *sysp, double parameter);
+void cleanGridSegment(TCell ***grid, int ic_from[3], int ic_to[3]);
+void compLocOrdParam(TSystem *sysp);
+void createCommunicators(TSystem *sysp);
+TCell ***createGrid(int cell_num[3]);
+void findLimits(TSystem *sysp, double lowerLimit[3], double upperLimit[3]);
+int getListLength(TParticleListItem *root_p);
+void identifyProcess(TSystem *sysp);
+void handleFileOpenError(FILE *fp, char *filename);
+void loadStateFile(TSystem *sysp, TCell ***global_grid);
+void rescaleVelocities(TSystem *sysp);
+void restoreBackups(TSystem *sysp);
+void insertInList(TParticleListItem **root_pp, TParticleListItem *item_p);
+void removeFromList(TParticleListItem **item_pp);
+
+//
+
+extern const int threeZeros[3];
