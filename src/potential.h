@@ -1,5 +1,5 @@
 /*
-  md_ghost.h: This file is part of Free Molecular Dynamics
+  potential.h: This file is part of Free Molecular Dynamics
 
   Copyright (C) 2019 Arham Amouye Foumani
 
@@ -17,8 +17,8 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-void fmd_ghostparticles_init(fmdt_sys *sysp);
-void fmd_ghostparticles_update_Femb(fmdt_sys *sysp);
-void fmd_ghostparticles_update_LocOrdParam(fmdt_sys *sysp);
-void fmd_ghostparticles_delete(fmdt_sys *sysp);
-void fmd_particles_migrate(fmdt_sys *sysp);
+typedef char fmdt_atom_name[9];
+
+typedef struct
+{
+} TPotential;

@@ -22,7 +22,7 @@
 #include "md_ghost.h"
 #include "forces.h"
 
-static void computeEAM_pass1(TSystem *sysp, double *FembSum_p)
+static void computeEAM_pass1(fmdt_sys *sysp, double *FembSum_p)
 {
     int jc[3], kc[3];
     int d, ir2, irho, ir2_h, irho_h;
@@ -120,7 +120,7 @@ static void computeEAM_pass1(TSystem *sysp, double *FembSum_p)
     *FembSum_p=sum;
 }
 
-static void computeEAM_pass2(TSystem *sysp, double FembSum)
+static void computeEAM_pass2(fmdt_sys *sysp, double FembSum)
 {
     int jc[3], kc[3];
     int d, ir2, ir2_h;
@@ -274,7 +274,7 @@ static void computeEAM_pass2(TSystem *sysp, double FembSum)
     MPI_Allreduce(&potEnergy, &sysp->totalPotentialEnergy, 1, MPI_DOUBLE, MPI_SUM, sysp->MD_comm);
 }
 
-static void fmd_computeEAM(TSystem *sysp)
+static void fmd_computeEAM(fmdt_sys *sysp)
 {
     double FembSum;
 
@@ -286,7 +286,7 @@ static void fmd_computeEAM(TSystem *sysp)
     fmd_ghostparticles_delete(sysp);
 }
 
-void fmd_dync_updateForces(TSystem *sysp)
+void fmd_dync_updateForces(fmdt_sys *sysp)
 {
     fmd_computeEAM(sysp);
 }
