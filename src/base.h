@@ -17,6 +17,9 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef BASE_H
+#define BASE_H
+
 //#define NDEBUG
 #define USE_CSPLINE
 
@@ -239,3 +242,5 @@ void removeFromList(TParticleListItem **item_pp);
 //
 
 extern const int threeZeros[3];
+
+#endif /* BASE_H */

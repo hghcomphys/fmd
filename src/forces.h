@@ -17,4 +17,9 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef FORCES_H
+#define FORCES_H
+
 void fmd_dync_updateForces(fmdt_sys *sysp);
+
+#endif /* FORCES_H */

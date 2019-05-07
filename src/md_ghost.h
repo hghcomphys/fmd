@@ -17,8 +17,13 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef MD_GHOST_H
+#define MD_GHOST_H
+
 void fmd_ghostparticles_init(fmdt_sys *sysp);
 void fmd_ghostparticles_update_Femb(fmdt_sys *sysp);
 void fmd_ghostparticles_update_LocOrdParam(fmdt_sys *sysp);
 void fmd_ghostparticles_delete(fmdt_sys *sysp);
 void fmd_particles_migrate(fmdt_sys *sysp);
+
+#endif /* MD_GHOST_H */

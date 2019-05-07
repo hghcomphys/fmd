@@ -17,6 +17,9 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef FMD_H
+#define FMD_H
+
 // types
 
 typedef struct fmdt_sys fmdt_sys;
@@ -71,3 +74,5 @@ void fmd_dync_setBerendsenThermostatParameter(fmdt_sys *system, double parameter
 void fmd_dync_velocityVerlet_takeFirstStep(fmdt_sys *system, int useThermostat);
 int fmd_dync_velocityVerlet_takeLastStep(fmdt_sys *system);
 void fmd_dync_equilibrate(fmdt_sys *system, int groupID, double duration, double strength);
+
+#endif /* FMD_H */
