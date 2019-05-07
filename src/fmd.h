@@ -19,7 +19,7 @@
 
 // types
 
-typedef struct __fmd_system fmdt_sys;
+typedef struct fmdt_sys fmdt_sys;
 typedef enum
     {scmXYZParticlesNum, scmXYZSeparate, scmCSV, scmVTF} fmdt_SaveConfigMode;
 

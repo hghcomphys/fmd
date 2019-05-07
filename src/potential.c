@@ -41,12 +41,12 @@ static void EAM_convert_r_to_r2(TEAM *EAMp, double *source, double *dest)
     free(sourceDD);
 }
 
-void fmd_pot_setCutoffRadius(TSystem *sysp, double cutoff)
+void fmd_pot_setCutoffRadius(fmdt_sys *sysp, double cutoff)
 {
     sysp->cutoffRadius = cutoff;
 }
 
-void fmd_pot_eam_free(TSystem *sysp)
+void fmd_pot_eam_free(fmdt_sys *sysp)
 {
     int i, j;
 
@@ -68,7 +68,7 @@ void fmd_pot_eam_free(TSystem *sysp)
     free(sysp->EAM.elements);
 }
 
-void fmd_pot_eam_init(TSystem *sysp, char *filePath)
+void fmd_pot_eam_init(fmdt_sys *sysp, char *filePath)
 {
     FILE *fp;
     char str[1024];
@@ -188,12 +188,12 @@ void fmd_pot_eam_init(TSystem *sysp, char *filePath)
     }
 }
 
-double fmd_pot_eam_getCutoffRadius(TSystem *sysp)
+double fmd_pot_eam_getCutoffRadius(fmdt_sys *sysp)
 {
     return sysp->EAM.cutoff;
 }
 
-double fmd_pot_eam_getLatticeParameter(TSystem *sysp, int element)
+double fmd_pot_eam_getLatticeParameter(fmdt_sys *sysp, int element)
 {
     return sysp->EAM.elements[element].latticeParameter;
 }

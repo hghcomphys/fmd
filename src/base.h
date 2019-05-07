@@ -215,24 +215,24 @@ typedef struct
     int _fileIndex;
     double _oldTotalMDEnergy;
     double _prevFailedMDEnergy;
-} TSystem;
+} fmdt_sys;
 
 // Functions
 
-void fmd_subd_init(TSystem *sysp);
-void fmd_box_createGrid(TSystem *sysp, double cutoff);
-void fmd_dync_setBerendsenThermostatParameter(TSystem *sysp, double parameter);
+void fmd_subd_init(fmdt_sys *sysp);
+void fmd_box_createGrid(fmdt_sys *sysp, double cutoff);
+void fmd_dync_setBerendsenThermostatParameter(fmdt_sys *sysp, double parameter);
 void cleanGridSegment(TCell ***grid, int ic_from[3], int ic_to[3]);
-void compLocOrdParam(TSystem *sysp);
-void createCommunicators(TSystem *sysp);
+void compLocOrdParam(fmdt_sys *sysp);
+void createCommunicators(fmdt_sys *sysp);
 TCell ***createGrid(int cell_num[3]);
-void findLimits(TSystem *sysp, double lowerLimit[3], double upperLimit[3]);
+void findLimits(fmdt_sys *sysp, double lowerLimit[3], double upperLimit[3]);
 int getListLength(TParticleListItem *root_p);
-void identifyProcess(TSystem *sysp);
+void identifyProcess(fmdt_sys *sysp);
 void handleFileOpenError(FILE *fp, char *filename);
-void loadStateFile(TSystem *sysp, TCell ***global_grid);
-void rescaleVelocities(TSystem *sysp);
-void restoreBackups(TSystem *sysp);
+void loadStateFile(fmdt_sys *sysp, TCell ***global_grid);
+void rescaleVelocities(fmdt_sys *sysp);
+void restoreBackups(fmdt_sys *sysp);
 void insertInList(TParticleListItem **root_pp, TParticleListItem *item_p);
 void removeFromList(TParticleListItem **item_pp);
 
