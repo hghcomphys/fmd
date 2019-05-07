@@ -17,8 +17,14 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef POTENTIAL_H
+#define POTENTIAL_H
+
 typedef char fmdt_atom_name[9];
 
 typedef struct
 {
 } TPotential;
+
+#endif /* POTENTIAL_H */
+
