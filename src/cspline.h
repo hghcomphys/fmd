@@ -17,6 +17,9 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef CSPLINE_H
+#define CSPLINE_H
+
 #define SPLINE_VAL(a,b,y,lo,hi,yDD,h) ((a)*(y)[lo]+(b)*(y)[hi]+(((a)*(a)*(a)-(a))*(yDD)[lo]+((b)*(b)*(b)-(b))*(yDD)[hi])*((h)*(h))/6.0)
 #define SPLINE_DERIV(a,b,y,lo,hi,yDD,h) (((y)[hi]-(y)[lo])/(h)+((3*(b)*(b)-1)*(yDD)[hi]-(3*(a)*(a)-1)*(yDD)[lo])*(h)/6.0)
 
@@ -42,3 +45,5 @@ void spline_prepare(double h, double y[], int n, double yDD[]);
 double spline_val(double h, double ya[], double yDDa[], double x);
 double spline_deriv(double h, double ya[], double yDDa[], double x);
 void spline_val_deriv(double h, double ya[], double yDDa[], double x, double *y, double *yD);
+
+#endif /* CSPLINE_H */
