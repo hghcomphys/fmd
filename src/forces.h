@@ -20,6 +20,6 @@
 #ifndef FORCES_H
 #define FORCES_H
 
-void fmd_dync_updateForces(fmdt_sys *sysp);
+void fmd_dync_updateForces(fmd_sys_t *sysp);
 
 #endif /* FORCES_H */

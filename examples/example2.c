@@ -13,7 +13,7 @@
 
 int main(int argc, char *argv[])
 {
-    fmdt_sys *sys;
+    fmd_sys_t *sys;
 
     // create an fmd-system instance
     sys = fmd_sys_create();

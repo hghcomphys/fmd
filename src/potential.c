@@ -42,12 +42,12 @@ static void EAM_convert_r_to_r2(TEAM *EAMp, double *source, double *dest)
     free(sourceDD);
 }
 
-void fmd_pot_setCutoffRadius(fmdt_sys *sysp, double cutoff)
+void fmd_pot_setCutoffRadius(fmd_sys_t *sysp, double cutoff)
 {
     sysp->cutoffRadius = cutoff;
 }
 
-void fmd_pot_eam_free(fmdt_sys *sysp)
+void fmd_pot_eam_free(fmd_sys_t *sysp)
 {
     int i, j;
 
@@ -69,7 +69,7 @@ void fmd_pot_eam_free(fmdt_sys *sysp)
     free(sysp->EAM.elements);
 }
 
-void fmd_pot_eam_init(fmdt_sys *sysp, char *filePath)
+void fmd_pot_eam_init(fmd_sys_t *sysp, char *filePath)
 {
     FILE *fp;
     char str[1024];
@@ -189,17 +189,17 @@ void fmd_pot_eam_init(fmdt_sys *sysp, char *filePath)
     }
 }
 
-double fmd_pot_eam_getCutoffRadius(fmdt_sys *sysp)
+double fmd_pot_eam_getCutoffRadius(fmd_sys_t *sysp)
 {
     return sysp->EAM.cutoff;
 }
 
-double fmd_pot_eam_getLatticeParameter(fmdt_sys *sysp, int element)
+double fmd_pot_eam_getLatticeParameter(fmd_sys_t *sysp, int element)
 {
     return sysp->EAM.elements[element].latticeParameter;
 }
 
-void fmd_pot_setParticleForms(fmdt_sys *sysp, unsigned number, fmd_particle_name_t *names, double *masses)
+void fmd_pot_setParticleForms(fmd_sys_t *sysp, unsigned number, fmd_particle_name_t *names, double *masses)
 {
     sysp->potential.pforms_num = number;
     sysp->potential.pforms = (particle_form_t *)malloc(number * sizeof(particle_form_t));
@@ -210,7 +210,7 @@ void fmd_pot_setParticleForms(fmdt_sys *sysp, unsigned number, fmd_particle_name
     }
 }
 
-void fmd_pot_free(fmdt_sys *sysp)
+void fmd_pot_free(fmd_sys_t *sysp)
 {
     free(sysp->potential.pforms);
 }
