@@ -199,6 +199,18 @@ double fmd_pot_eam_getLatticeParameter(fmdt_sys *sysp, int element)
     return sysp->EAM.elements[element].latticeParameter;
 }
 
-void fmd_pot_setAtoms(int number, fmdt_atom_name *names)
+void fmd_pot_setParticleForms(fmdt_sys *sysp, unsigned number, fmd_particle_name_t *names, double *masses)
 {
+    sysp->potential.pforms_num = number;
+    sysp->potential.pforms = (particle_form_t *)malloc(number * sizeof(particle_form_t));
+    for (int i=0; i<number; i++)
+    {
+        sysp->potential.pforms[i].mass = masses[i];
+        strcpy(sysp->potential.pforms[i].name, names[i]);
+    }
+}
+
+void fmd_pot_free(fmdt_sys *sysp)
+{
+    free(sysp->potential.pforms);
 }

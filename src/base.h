@@ -36,6 +36,7 @@
 #include <omp.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
+#include "potential.h"
 
 // Global macroes and symbolic constants
 
@@ -177,6 +178,7 @@ typedef struct
 {
     TSubDomain subDomain;
     TEAM EAM;
+    potential_t potential;
     TCell ***global_grid;
     int globalGridExists;
     int boxSizeDetermined;

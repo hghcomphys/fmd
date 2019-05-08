@@ -20,11 +20,17 @@
 #ifndef POTENTIAL_H
 #define POTENTIAL_H
 
-typedef char fmdt_atom_name[9];
+typedef char fmd_particle_name_t[17];
 
 typedef struct
 {
-} TPotential;
+    double mass;
+    fmd_particle_name_t name;
+} particle_form_t;          // particle form
 
+typedef struct
+{
+    unsigned pforms_num;
+    particle_form_t *pforms;
+} potential_t;
 #endif /* POTENTIAL_H */
-
