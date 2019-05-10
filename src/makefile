@@ -5,7 +5,7 @@ OBJS = base.o cspline.o md_ghost.o forces.o potential.o
 SHAREDLIB = libfmd.so
 BASE_H = base.h potential.h
 
-.PHONY: all clean
+.PHONY: all shared clean
 all: shared
 shared: $(SHAREDLIB)
 $(SHAREDLIB): $(OBJS)
@@ -13,7 +13,8 @@ $(SHAREDLIB): $(OBJS)
 base.o: $(BASE_H) md_ghost.h forces.h
 forces.o: forces.h $(BASE_H) cspline.h md_ghost.h
 md_ghost.o: $(BASE_H) md_ghost.h
-potential.o: $(BASE_H) cspline.h potential.h
+potential.o: $(BASE_H) cspline.h potential.h array.h
 cspline.o: cspline.h
+array.o: array.h
 clean:
 	rm -f *.o libfmd.so

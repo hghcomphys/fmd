@@ -1,5 +1,5 @@
 /*
-  potential.h: This file is part of Free Molecular Dynamics
+  forces.c: This file is part of Free Molecular Dynamics
 
   Copyright (C) 2019 Arham Amouye Foumani
 
@@ -17,33 +17,10 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef POTENTIAL_H
-#define POTENTIAL_H
+#ifndef ARRAY_H
+#define ARRAY_H
 
-typedef char fmd_atomkind_name_t[17];
+void **fmd_array_neat2d_create(unsigned dim1, unsigned dim2, unsigned elsize);
+void fmd_array_neat2d_free(void **array);
 
-typedef struct
-{
-    double eps;
-    double sig;
-} LJ_6_12_t;
-
-typedef struct
-{
-    double mass;
-    fmd_atomkind_name_t name;
-} atomkind_t;
-
-typedef struct
-{
-    unsigned atomkinds_num;
-    atomkind_t *atomkinds;
-    LJ_6_12_t **lj_6_12;
-} potential_t;
-
-typedef struct fmd_sys_t fmd_sys_t;
-
-void fmd_pot_free(fmd_sys_t *sysp);
-void fmd_pot_init(fmd_sys_t *sysp);
-
-#endif /* POTENTIAL_H */
+#endif

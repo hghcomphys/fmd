@@ -95,7 +95,7 @@
 #define ERROR_UNABLE_OPEN_FILE                  3
 #define ERROR_UNSUITABLE_FILE                   4
 
-// Typedefs
+// typedefs & structs
 
 typedef struct
 {
@@ -172,9 +172,11 @@ typedef struct
 } TEAM;
 
 typedef enum
-    {scmXYZParticlesNum, scmXYZSeparate, scmCSV, scmVTF} TSaveConfigMode;
+    {scmXYZParticlesNum, scmXYZSeparate, scmCSV, scmVTF} fmd_SaveConfigMode_t;
 
-typedef struct
+typedef struct fmd_sys_t fmd_sys_t;
+
+struct fmd_sys_t
 {
     TSubDomain subDomain;
     TEAM EAM;
@@ -209,7 +211,7 @@ typedef struct
     double BerendsenThermostatParam;
     int iCompLocOrdParam;           // compute local order parameter?
     int locOrdParamPeriod;
-    TSaveConfigMode saveConfigMode;
+    fmd_SaveConfigMode_t saveConfigMode;
     FILE *configFilep;
     double wallTimeOrigin;
     int activeGroup;
@@ -220,7 +222,7 @@ typedef struct
     int _fileIndex;
     double _oldTotalMDEnergy;
     double _prevFailedMDEnergy;
-} fmd_sys_t;
+};
 
 // Functions
 

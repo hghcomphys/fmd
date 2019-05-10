@@ -17,10 +17,10 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include "forces.h"
 #include "base.h"
 #include "cspline.h"
 #include "md_ghost.h"
-#include "forces.h"
 
 static void computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
 {

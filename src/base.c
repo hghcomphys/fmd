@@ -1174,6 +1174,7 @@ fmd_sys_t *fmd_sys_create()
     sysp->_fileIndex = 0;
     sysp->_oldTotalMDEnergy = 0.0;
     sysp->_prevFailedMDEnergy = 0.0;
+    fmd_pot_init(sysp);
 
     // this must be the last statement before return
     sysp->wallTimeOrigin = MPI_Wtime();
@@ -1283,7 +1284,7 @@ void fmd_io_setSaveDirectory(fmd_sys_t *sysp, char *directory)
     strcpy(sysp->saveDirectory, directory);
 }
 
-void fmd_io_setSaveConfigMode(fmd_sys_t *sysp, TSaveConfigMode mode)
+void fmd_io_setSaveConfigMode(fmd_sys_t *sysp, fmd_SaveConfigMode_t mode)
 {
     sysp->saveConfigMode = mode;
 }

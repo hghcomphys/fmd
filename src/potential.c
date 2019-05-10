@@ -20,9 +20,10 @@
 // all functions for loading potential files and preparing or managing data structures related to
 // potentials come here.
 
+#include "potential.h"
 #include "base.h"
 #include "cspline.h"
-#include "potential.h"
+#include "array.h"
 
 static void EAM_convert_r_to_r2(TEAM *EAMp, double *source, double *dest)
 /* Consider two functions f1 and f2 with the relation f2(r^2)=f1(r)
@@ -199,18 +200,33 @@ double fmd_pot_eam_getLatticeParameter(fmd_sys_t *sysp, int element)
     return sysp->EAM.elements[element].latticeParameter;
 }
 
-void fmd_pot_setParticleForms(fmd_sys_t *sysp, unsigned number, fmd_particle_name_t *names, double *masses)
+void fmd_pot_setAtomKinds(fmd_sys_t *sysp, unsigned number, fmd_atomkind_name_t *names, double *masses)
 {
-    sysp->potential.pforms_num = number;
-    sysp->potential.pforms = (particle_form_t *)malloc(number * sizeof(particle_form_t));
+    sysp->potential.atomkinds_num = number;
+    sysp->potential.atomkinds = (atomkind_t *)malloc(number * sizeof(atomkind_t));
     for (int i=0; i<number; i++)
     {
-        sysp->potential.pforms[i].mass = masses[i];
-        strcpy(sysp->potential.pforms[i].name, names[i]);
+        sysp->potential.atomkinds[i].mass = masses[i];
+        strcpy(sysp->potential.atomkinds[i].name, names[i]);
     }
 }
 
 void fmd_pot_free(fmd_sys_t *sysp)
 {
-    free(sysp->potential.pforms);
+    if (sysp->potential.atomkinds != NULL)
+    {
+        free(sysp->potential.atomkinds);
+        sysp->potential.atomkinds = NULL;
+    }
+    if (sysp->potential.lj_6_12 != NULL)
+    {
+        fmd_array_neat2d_free((void **)sysp->potential.lj_6_12);
+        sysp->potential.lj_6_12 = NULL;
+    }
+}
+
+void fmd_pot_init(fmd_sys_t *sysp)
+{
+    sysp->potential.atomkinds = NULL;
+    sysp->potential.lj_6_12 = NULL;
 }
