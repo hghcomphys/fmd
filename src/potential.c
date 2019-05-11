@@ -230,3 +230,20 @@ void fmd_pot_init(fmd_sys_t *sysp)
     sysp->potential.atomkinds = NULL;
     sysp->potential.lj_6_12 = NULL;
 }
+
+void fmd_pot_lj_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomkind2,
+                      double sigma, double epsilon, double cutoff)
+{
+    if (sysp->potential.lj_6_12 == NULL)
+        sysp->potential.lj_6_12 = (LJ_6_12_t **)fmd_array_neat2d_create(sysp->potential.atomkinds_num,
+                                                                        sysp->potential.atomkinds_num,
+                                                                        sizeof(LJ_6_12_t));
+    sysp->potential.lj_6_12[atomkind1][atomkind2].eps =
+      sysp->potential.lj_6_12[atomkind2][atomkind1].eps = epsilon;
+
+    sysp->potential.lj_6_12[atomkind1][atomkind2].sig =
+      sysp->potential.lj_6_12[atomkind2][atomkind1].sig = sigma;
+
+    sysp->potential.lj_6_12[atomkind1][atomkind2].cutoff_sqr =
+      sysp->potential.lj_6_12[atomkind2][atomkind1].cutoff_sqr = SQR(cutoff);
+}

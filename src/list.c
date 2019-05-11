@@ -1,5 +1,5 @@
 /*
-  potential.h: This file is part of Free Molecular Dynamics
+  list.c: This file is part of Free Molecular Dynamics
 
   Copyright (C) 2019 Arham Amouye Foumani
 
@@ -17,34 +17,31 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef POTENTIAL_H
-#define POTENTIAL_H
+// this module owes some ideas to the doubly-linked list of GLib
 
-typedef char fmd_atomkind_name_t[17];
+#include "list.h"
+#include <stdlib.h>
 
-typedef struct
+list_t *fmd_list_prepend(list_t *list, void *data)
 {
-    double eps;
-    double sig;
-    double cutoff_sqr;
-} LJ_6_12_t;
+    list_t *item = malloc(sizeof(list_t));
+    if (item != NULL)
+    {
+        item->data = data;
+        item->next = list;
+        if (list == NULL)
+            item->prev = NULL;
+        else
+        {
+            item->prev = list->prev;
+            if (list->prev != NULL)
+                list->prev->next = item;
+            list->prev = item;
+        }
+    }
+    return item;
+}
 
-typedef struct
+list_t *fmd_list_item_remove(list_t *list, list_t *item)
 {
-    double mass;
-    fmd_atomkind_name_t name;
-} atomkind_t;
-
-typedef struct
-{
-    unsigned atomkinds_num;
-    atomkind_t *atomkinds;
-    LJ_6_12_t **lj_6_12;
-} potential_t;
-
-typedef struct fmd_sys_t fmd_sys_t;
-
-void fmd_pot_free(fmd_sys_t *sysp);
-void fmd_pot_init(fmd_sys_t *sysp);
-
-#endif /* POTENTIAL_H */
+}

@@ -1,5 +1,5 @@
 /*
-  potential.h: This file is part of Free Molecular Dynamics
+  list.h: This file is part of Free Molecular Dynamics
 
   Copyright (C) 2019 Arham Amouye Foumani
 
@@ -17,34 +17,18 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef POTENTIAL_H
-#define POTENTIAL_H
+#ifndef LIST_H
+#define LIST_H
 
-typedef char fmd_atomkind_name_t[17];
+typedef struct list_t list_t;
 
-typedef struct
+struct list_t
 {
-    double eps;
-    double sig;
-    double cutoff_sqr;
-} LJ_6_12_t;
+    void *data;
+    list_t *next;
+    list_t *prev;
+};
 
-typedef struct
-{
-    double mass;
-    fmd_atomkind_name_t name;
-} atomkind_t;
+list_t *fmd_list_prepend(list_t *list, void *data);
 
-typedef struct
-{
-    unsigned atomkinds_num;
-    atomkind_t *atomkinds;
-    LJ_6_12_t **lj_6_12;
-} potential_t;
-
-typedef struct fmd_sys_t fmd_sys_t;
-
-void fmd_pot_free(fmd_sys_t *sysp);
-void fmd_pot_init(fmd_sys_t *sysp);
-
-#endif /* POTENTIAL_H */
+#endif /* LIST_H */

@@ -20,7 +20,7 @@
 #include "array.h"
 #include <stdlib.h>
 
-/* creates an uninitialized cache-friendly dim1 x dim2 array;
+/* creates an uninitialized "neat" dim1 x dim2 array;
    elsize is the size of each data element in the array in bytes;
    returns NULL if unsuccessful. */
 void **fmd_array_neat2d_create(unsigned dim1, unsigned dim2, unsigned elsize)

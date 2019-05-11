@@ -23,4 +23,4 @@
 void **fmd_array_neat2d_create(unsigned dim1, unsigned dim2, unsigned elsize);
 void fmd_array_neat2d_free(void **array);
 
-#endif
+#endif /* ARRAY_H */
