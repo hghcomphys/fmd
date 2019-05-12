@@ -30,5 +30,6 @@ struct list_t
 };
 
 list_t *fmd_list_prepend(list_t *list, void *data);
+unsigned fmd_list_length(list_t *list);
 
 #endif /* LIST_H */

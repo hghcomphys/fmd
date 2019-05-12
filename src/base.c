@@ -49,6 +49,7 @@ void cleanGridSegment(TCell ***grid, int ic_from[3], int ic_to[3])
 
 void compLocOrdParam(fmd_sys_t *sysp)
 {
+/*
     float latticeParameter = sysp->EAM.elements[0].latticeParameter;
     float rCutSqd = SQR(1.32 * latticeParameter);
     int ic[3], jc[3], kc[3];
@@ -186,10 +187,12 @@ void compLocOrdParam(fmd_sys_t *sysp)
         }
 
     sysp->LOPiteration = 0;
+*/
 }
 
 void fmd_dync_velocityVerlet_takeFirstStep(fmd_sys_t *sysp, int useThermostat)
 {
+/*
     int ic[3];
     int d;
     TParticleListItem *item_p, **item_pp;
@@ -249,10 +252,12 @@ void fmd_dync_velocityVerlet_takeFirstStep(fmd_sys_t *sysp, int useThermostat)
         }
     }
     refreshGrid(sysp, 0);
+*/
 }
 
 int fmd_dync_velocityVerlet_takeLastStep(fmd_sys_t *sysp)
 {
+/*
     int ic[3];
     int d;
     TParticleListItem *item_p;
@@ -348,6 +353,7 @@ int fmd_dync_velocityVerlet_takeLastStep(fmd_sys_t *sysp)
     sysp->globalTemperature = m_vSqd_SumSum / (3.0 * sysp->activeGroupParticlesNum * K_BOLTZMANN);
 
     return returnVal;
+*/
 }
 
 // not correct under periodic boundary conditions
@@ -533,6 +539,7 @@ void fmd_matt_addVelocity(fmd_sys_t *sysp, int groupID, double vx, double vy, do
 
 void fmd_matt_distribute(fmd_sys_t *sysp)
 {
+/*
     TParticleListItem *item_p;
     int i, k, d, nct, sum_length;
     int ic[3], *ic_length;
@@ -661,6 +668,7 @@ void fmd_matt_distribute(fmd_sys_t *sysp)
     sysp->totalKineticEnergy = 3.0/2.0 * sysp->totalNoOfParticles * K_BOLTZMANN * sysp->globalTemperature;
     sysp->globalGridExists = 0;
     sysp->particlesDistributed = 1;
+*/
 }
 
 void fmd_subd_init(fmd_sys_t *sysp)
@@ -713,6 +721,7 @@ void insertInList(TParticleListItem **root_pp, TParticleListItem *item_p)
 
 void fmd_io_loadState(fmd_sys_t *sysp, char *file, int useTime)
 {
+/*
     TParticleListItem *item_p;
     FILE *fp;
     char name[3];
@@ -786,6 +795,7 @@ void fmd_io_loadState(fmd_sys_t *sysp, char *file, int useTime)
         }
         fclose(fp);
     }
+*/
 }
 
 static void refreshGrid(fmd_sys_t *sysp, int reverse)
@@ -897,6 +907,7 @@ void restoreBackups(fmd_sys_t *sysp)
 
 void fmd_matt_saveConfiguration(fmd_sys_t *sysp)
 {
+/*
     int ic[3];
     TParticleListItem *item_p;
     TXYZ_Struct *localData, *globalData;
@@ -1053,10 +1064,12 @@ void fmd_matt_saveConfiguration(fmd_sys_t *sysp)
          sysp->saveConfigMode == scmVTF)
             fclose(sysp->configFilep);
     }
+*/
 }
 
 void fmd_io_saveState(fmd_sys_t *sysp, char *filename)
 {
+/*
     TParticle *is_particles, *P_p;
     int *nums;
     int i, k, ic[3];
@@ -1117,6 +1130,7 @@ void fmd_io_saveState(fmd_sys_t *sysp, char *filename)
             MAINPROCESS(sysp->subDomain.numprocs), 150, sysp->MD_comm);
         free(is_particles);
     }
+*/
 }
 
 void fmd_matt_setDesiredTemperature(fmd_sys_t *sysp, double desiredTemperature)
@@ -1227,6 +1241,7 @@ void fmd_box_createGrid(fmd_sys_t *sysp, double cutoff)
 void fmd_matt_makeCuboidFCC(fmd_sys_t *sysp, double x, double y, double z,
   int dimx, int dimy, int dimz, double latticeParameter, int elementID, int groupID)
 {
+/*
     if (sysp->subDomain.myrank == MAINPROCESS(sysp->subDomain.numprocs))
     {
         double mass, stdDevVelocity;
@@ -1277,6 +1292,7 @@ void fmd_matt_makeCuboidFCC(fmd_sys_t *sysp, double x, double y, double z,
 
         sysp->totalNoOfParticles += atomsNum;
     }
+*/
 }
 
 void fmd_io_setSaveDirectory(fmd_sys_t *sysp, char *directory)
@@ -1355,6 +1371,7 @@ double fmd_matt_getTotalEnergy(fmd_sys_t *sysp)
 
 void fmd_matt_giveTemperature(fmd_sys_t *sysp, int groupID)
 {
+/*
     TCell ***grid;
     int *start, *stop;
     int ic[3];
@@ -1397,6 +1414,7 @@ void fmd_matt_giveTemperature(fmd_sys_t *sysp, int groupID)
         }
 
     gsl_rng_free(rng);
+*/
 }
 
 double fmd_matt_getGlobalTemperature(fmd_sys_t *sysp)

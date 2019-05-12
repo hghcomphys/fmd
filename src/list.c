@@ -25,6 +25,7 @@
 list_t *fmd_list_prepend(list_t *list, void *data)
 {
     list_t *item = malloc(sizeof(list_t));
+
     if (item != NULL)
     {
         item->data = data;
@@ -39,7 +40,21 @@ list_t *fmd_list_prepend(list_t *list, void *data)
             list->prev = item;
         }
     }
+
     return item;
+}
+
+unsigned fmd_list_length(list_t *list)
+{
+    unsigned length = 0;
+
+    while (list != NULL)
+    {
+        length++;
+        list = list->next;
+    }
+
+    return length;
 }
 
 list_t *fmd_list_item_remove(list_t *list, list_t *item)

@@ -150,27 +150,6 @@ typedef struct
     int numberOfParticles;
 } TSubDomain;
 
-typedef struct
-{
-    double mass;
-    double latticeParameter;
-    double *F;
-    double *F_DD;
-    double *rho;
-    double *rhoDD;
-    double **phi;
-    double **phiDD;
-    char name[3];
-} TElement;
-
-typedef struct
-{
-    TElement *elements;
-    double drho, dr, dr2, cutoff;
-    int elementsNo;
-    int Nrho, Nr, Nr2;
-} TEAM;
-
 typedef enum
     {scmXYZParticlesNum, scmXYZSeparate, scmCSV, scmVTF} fmd_SaveConfigMode_t;
 
@@ -179,8 +158,7 @@ typedef struct fmd_sys_t fmd_sys_t;
 struct fmd_sys_t
 {
     TSubDomain subDomain;
-    TEAM EAM;
-    potential_t potential;
+    potsys_t potsys;
     TCell ***global_grid;
     int globalGridExists;
     int boxSizeDetermined;

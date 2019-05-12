@@ -24,6 +24,7 @@
 
 static void computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
 {
+/*
     int jc[3], kc[3];
     int d, ir2, irho, ir2_h, irho_h;
     TParticleListItem *item1_p, *item2_p;
@@ -118,10 +119,12 @@ static void computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
         }
     }
     *FembSum_p=sum;
+*/
 }
 
 static void computeEAM_pass2(fmd_sys_t *sysp, double FembSum)
 {
+/*
     int jc[3], kc[3];
     int d, ir2, ir2_h;
     TParticleListItem *item1_p, *item2_p;
@@ -272,6 +275,7 @@ static void computeEAM_pass2(fmd_sys_t *sysp, double FembSum)
 #endif
     potEnergy = 0.5 * potEnergy + FembSum;
     MPI_Allreduce(&potEnergy, &sysp->totalPotentialEnergy, 1, MPI_DOUBLE, MPI_SUM, sysp->MD_comm);
+*/
 }
 
 static void fmd_computeEAM(fmd_sys_t *sysp)

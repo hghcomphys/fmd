@@ -20,7 +20,28 @@
 #ifndef POTENTIAL_H
 #define POTENTIAL_H
 
-typedef char fmd_atomkind_name_t[17];
+typedef char fmd_atomkind_name_t[16];
+
+typedef struct
+{
+    double mass;
+    double latticeParameter;
+    double *F;
+    double *F_DD;
+    double *rho;
+    double *rhoDD;
+    double **phi;
+    double **phiDD;
+    fmd_atomkind_name_t name;
+} eam_element_t;
+
+typedef struct
+{
+    eam_element_t *elements;
+    double drho, dr, dr2, cutoff;
+    int elementsNo;
+    int Nrho, Nr, Nr2;
+} eam_t;
 
 typedef struct
 {
@@ -29,18 +50,30 @@ typedef struct
     double cutoff_sqr;
 } LJ_6_12_t;
 
+typedef enum {POTKIND_LJ_6_12, POTKIND_EAM_ALLOY} potkind_t;
+
+typedef struct
+{
+    potkind_t kind;
+    void *data;
+} fmd_pot_t;
+
 typedef struct
 {
     double mass;
     fmd_atomkind_name_t name;
 } atomkind_t;
 
+typedef struct list_t list_t;
+
 typedef struct
 {
     unsigned atomkinds_num;
     atomkind_t *atomkinds;
     LJ_6_12_t **lj_6_12;
-} potential_t;
+    fmd_pot_t **pottable;
+    list_t *potlist;
+} potsys_t;
 
 typedef struct fmd_sys_t fmd_sys_t;
 
