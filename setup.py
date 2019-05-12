@@ -21,5 +21,5 @@ setup(
 #    author='',
 #    author_email='',
     packages=['pyfmd'],  # 'src'
-    install_requires=['numpy>=1.12', 'ase>=3.15.0', 'periodictable>=1.5.0']  #
+    install_requires=['numpy', 'ase', 'periodictable']  #
 )
