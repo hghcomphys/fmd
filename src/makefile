@@ -13,7 +13,7 @@ $(SHAREDLIB): $(OBJS)
 base.o: $(BASE_H) md_ghost.h forces.h
 forces.o: forces.h $(BASE_H) cspline.h md_ghost.h
 md_ghost.o: $(BASE_H) md_ghost.h
-potential.o: $(BASE_H) cspline.h potential.h array.h
+potential.o: $(BASE_H) cspline.h potential.h array.h list.h
 cspline.o: cspline.h
 array.o: array.h
 list.o: list.h

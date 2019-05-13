@@ -50,13 +50,24 @@ typedef struct
     double cutoff_sqr;
 } LJ_6_12_t;
 
-typedef enum {POTKIND_LJ_6_12, POTKIND_EAM_ALLOY} potkind_t;
+typedef enum
+{
+    POTKIND_LJ_6_12,
+    POTKIND_EAM_ALLOY
+} potkind_t;
 
 typedef struct
 {
     potkind_t kind;
     void *data;
 } fmd_pot_t;
+
+typedef struct
+{
+    potkind_t kind;
+    void *data;
+    unsigned iloc, jloc;    // local indexes inside the potential, used in potentials like EAM
+} pot_pair_t;
 
 typedef struct
 {
@@ -70,8 +81,7 @@ typedef struct
 {
     unsigned atomkinds_num;
     atomkind_t *atomkinds;
-    LJ_6_12_t **lj_6_12;
-    fmd_pot_t **pottable;
+    pot_pair_t **pottable;
     list_t *potlist;
 } potsys_t;
 

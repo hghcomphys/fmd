@@ -1,5 +1,5 @@
 /*
-  forces.c: This file is part of Free Molecular Dynamics
+  array.h: This file is part of Free Molecular Dynamics
 
   Copyright (C) 2019 Arham Amouye Foumani
 
