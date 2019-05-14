@@ -52,6 +52,7 @@ typedef struct
 
 typedef enum
 {
+    POTKIND_NONE,
     POTKIND_LJ_6_12,
     POTKIND_EAM_ALLOY
 } potkind_t;
@@ -81,14 +82,16 @@ typedef struct
 {
     unsigned atomkinds_num;
     atomkind_t *atomkinds;
-    potpair_t **pottable;
-    list_t *potlist;
-    list_t *potkinds;
+    potpair_t **pottable;       // table of applied pots
+    list_t *potkinds;           // list of pot kinds that are present in pottable
+    unsigned potkinds_num;
+    list_t *potlist;            // list of all pots, whether applied or not
 } potsys_t;
 
 typedef struct fmd_sys_t fmd_sys_t;
 
 void fmd_pot_free(fmd_sys_t *sysp);
 void fmd_pot_init(fmd_sys_t *sysp);
+void fmd_pot_potkinds_update(fmd_sys_t *sysp);
 
 #endif /* POTENTIAL_H */

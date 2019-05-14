@@ -292,5 +292,11 @@ static void fmd_computeEAM(fmd_sys_t *sysp)
 
 void fmd_dync_updateForces(fmd_sys_t *sysp)
 {
-    fmd_computeEAM(sysp);
+    if (sysp->potsys.potkinds == NULL)  // just for one time
+        fmd_pot_potkinds_update(sysp);
+
+    if (sysp->potsys.potkinds_num == 1)
+    {
+        //fmd_computeEAM(sysp);
+    }
 }

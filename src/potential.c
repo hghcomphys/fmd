@@ -271,6 +271,9 @@ static void pottable_create(fmd_sys_t *sysp)
     sysp->potsys.pottable = (potpair_t **)fmd_array_neat2d_create(sysp->potsys.atomkinds_num,
                                                                   sysp->potsys.atomkinds_num,
                                                                   sizeof(potpair_t));
+    for (unsigned i=0; i < sysp->potsys.atomkinds_num; i++)
+        for (unsigned j=0; j < sysp->potsys.atomkinds_num; j++)
+            sysp->potsys.pottable[i][j].kind = POTKIND_NONE;
 }
 
 static unsigned pot_eam_find_iloc(fmd_sys_t *sysp, eam_t *eam, unsigned atomkind)
@@ -345,22 +348,26 @@ static int potkind_compare(const void *a, const void *b)
 }
 
 // TO-DO?: first, clean the list
-unsigned fmd_pot_potkinds_update(fmd_sys_t *sysp)
+void fmd_pot_potkinds_update(fmd_sys_t *sysp)
 {
-    unsigned count = 0;
+    // error should be handled here
+    assert(sysp->potsys.pottable != NULL);
+
+    sysp->potsys.potkinds_num = 0;
 
     for (unsigned i=0; i < sysp->potsys.atomkinds_num; i++)
         for (unsigned j=0; j <= i; j++)
         {
             potpair_t *potpair = &sysp->potsys.pottable[i][j];
 
+            // error should be handled here
+            assert(potpair->kind != POTKIND_NONE);
+
             // add the potkind to potkinds list, if isn't already included there
             if (fmd_list_find_custom(sysp->potsys.potkinds, &potpair->kind, potkind_compare) == NULL)
             {
-                count++;
+                sysp->potsys.potkinds_num++;
                 sysp->potsys.potkinds = fmd_list_prepend(sysp->potsys.potkinds, &potpair->kind);
             }
         }
-
-    return count;
 }
