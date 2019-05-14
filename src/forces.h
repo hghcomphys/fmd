@@ -23,5 +23,6 @@
 typedef struct fmd_sys_t fmd_sys_t;
 
 void fmd_dync_updateForces(fmd_sys_t *sysp);
+void fmd_dync_updateForcesLJ(fmd_sys_t *sysp);
 
 #endif /* FORCES_H */

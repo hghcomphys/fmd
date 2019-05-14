@@ -294,3 +294,119 @@ void fmd_dync_updateForces(fmd_sys_t *sysp)
 {
     fmd_computeEAM(sysp);
 }
+
+
+// LJ potential
+static void computeLJ(fmd_sys_t *sysp)
+{
+    const double epsilon=0.01029849, sigma=3.4, cutoff=8.5;
+    int jc[3], kc[3];
+    int d;
+    TParticleListItem *item1_p, *item2_p;
+    const double r_cutSqd = cutoff*cutoff;
+    double r2, rv[3];
+    int element_i, element_j;
+    int ic0, ic1, ic2;
+    double potEnergy = 0.0;
+    double F[3];
+
+    // iterate over all cells(lists)
+#pragma omp parallel for private(ic0,ic1,ic2,item1_p,d,element_i,kc,jc,item2_p,rv,r2,F,element_j) \
+      shared(sysp) default(none) collapse(3) reduction(+:potEnergy) schedule(static,1)
+
+    for (ic0 = sysp->subDomain.ic_start[0]; ic0 < sysp->subDomain.ic_stop[0]; ic0++)
+        for (ic1 = sysp->subDomain.ic_start[1]; ic1 < sysp->subDomain.ic_stop[1]; ic1++)
+            for (ic2 = sysp->subDomain.ic_start[2]; ic2 < sysp->subDomain.ic_stop[2]; ic2++)
+            {
+                // iterate over all items in cell ic
+                for (item1_p = sysp->subDomain.grid[ic0][ic1][ic2]; item1_p != NULL; item1_p = item1_p->next_p)
+                {
+                    if (!(sysp->activeGroup == -1 || item1_p->P.groupID == sysp->activeGroup))
+                        continue;
+
+                    for (d=0; d<3; d++)
+                        F[d] = 0.0;
+
+                    //element_i = item1_p->P.elementID;
+                    //rho_i = sysp->EAM.elements[element_i].rho;
+
+                    // iterate over neighbor cells of cell ic
+                    for (kc[0]=ic0-1; kc[0]<=ic0+1; kc[0]++)
+                    {
+                        SET_jc_IN_DIRECTION(0)
+                        for (kc[1]=ic1-1; kc[1]<=ic1+1; kc[1]++)
+                        {
+                            SET_jc_IN_DIRECTION(1)
+                            for (kc[2]=ic2-1; kc[2]<=ic2+1; kc[2]++)
+                            {
+                                SET_jc_IN_DIRECTION(2)
+                                // iterate over all items in cell jc
+                                for (item2_p = sysp->subDomain.grid[jc[0]][jc[1]][jc[2]]; item2_p != NULL; item2_p = item2_p->next_p)
+                                {
+                                    if (!(sysp->activeGroup == -1 || item2_p->P.groupID == sysp->activeGroup))
+                                        continue;
+
+                                    if (item1_p != item2_p)
+                                    {
+                                        for (d=0; d<3; d++)
+                                        {
+                                            if (sysp->ns[d] == 1)
+                                            {
+                                                if (kc[d]==-1)
+                                                    rv[d] = item1_p->P.x[d] - item2_p->P.x[d] + sysp->l[d];
+                                                else
+                                                if (kc[d] == sysp->nc[d])
+                                                    rv[d] = item1_p->P.x[d] - item2_p->P.x[d] - sysp->l[d];
+                                                else
+                                                    rv[d] = item1_p->P.x[d] - item2_p->P.x[d];
+                                            }
+                                            else
+                                                rv[d] = item1_p->P.x[d] - item2_p->P.x[d];
+                                        }
+                                        r2 = SQR(rv[0])+SQR(rv[1])+SQR(rv[2]);
+                                        if (r2 < r_cutSqd)
+                                        {
+                                            double inv_r2, inv_rs2, inv_rs6;
+
+                                            // force, F = -(d/dr)U
+                                            inv_r2 = 1.0/r2;
+                                            inv_rs2 = sigma*sigma*inv_r2;
+                                            inv_rs6 = inv_rs2*inv_rs2*inv_rs2;
+                                            for (d=0; d<3; d++) {
+                                                F[d] += rv[d]*inv_r2*(inv_rs6*inv_rs6 - 0.5*inv_rs6);
+                                            }
+
+                                            // potential energy, U = 4*eps*( (sig/r)^12 - (sig/r)^6 )
+                                            potEnergy += (inv_rs6*inv_rs6 - inv_rs6);
+
+                                            // pressure
+                                            /*for (d=0; d<3; d++) {
+                                                pressure += -F[d]*rv[d]
+                                            }*/
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    for (d=0; d<3; d++)
+                        item1_p->F[d] = 48.0*epsilon*F[d];
+                }
+            }
+
+    potEnergy = 2.0*epsilon*potEnergy;
+    MPI_Allreduce(&potEnergy, &sysp->totalPotentialEnergy, 1, MPI_DOUBLE, MPI_SUM, sysp->MD_comm);
+}
+
+static void fmd_computeLJ(fmd_sys_t *sysp)
+{
+    fmd_ghostparticles_init(sysp);
+    computeLJ(sysp);
+    fmd_ghostparticles_delete(sysp);
+}
+
+void fmd_dync_updateForcesLJ(fmd_sys_t *sysp)
+{
+    fmd_computeLJ(sysp);
+}
