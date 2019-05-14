@@ -67,7 +67,7 @@ typedef struct
     potkind_t kind;
     void *data;
     unsigned iloc, jloc;    // local indexes inside the potential, used in potentials like EAM
-} pot_pair_t;
+} potpair_t;
 
 typedef struct
 {
@@ -81,8 +81,9 @@ typedef struct
 {
     unsigned atomkinds_num;
     atomkind_t *atomkinds;
-    pot_pair_t **pottable;
+    potpair_t **pottable;
     list_t *potlist;
+    list_t *potkinds;
 } potsys_t;
 
 typedef struct fmd_sys_t fmd_sys_t;

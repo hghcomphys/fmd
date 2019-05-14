@@ -20,6 +20,8 @@
 #ifndef LIST_H
 #define LIST_H
 
+typedef int (*comparefunc_t)(const void *a, const void *b);
+
 typedef struct list_t list_t;
 
 struct list_t
@@ -31,5 +33,6 @@ struct list_t
 
 list_t *fmd_list_prepend(list_t *list, void *data);
 unsigned fmd_list_length(list_t *list);
+list_t *fmd_list_find_custom(list_t *list, const void *data, comparefunc_t func);
 
 #endif /* LIST_H */

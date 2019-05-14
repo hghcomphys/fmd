@@ -250,6 +250,12 @@ void fmd_pot_free(fmd_sys_t *sysp)
         // FREE_POTLIST
         // sysp->potsys.potlist = NULL;
     }
+
+    if (sysp->potsys.potkinds != NULL)
+    {
+        // FREE_POTKINDS
+        // sysp->potsys.potkinds = NULL;
+    }
 }
 
 void fmd_pot_init(fmd_sys_t *sysp)
@@ -257,13 +263,14 @@ void fmd_pot_init(fmd_sys_t *sysp)
     sysp->potsys.atomkinds = NULL;
     sysp->potsys.potlist = NULL;
     sysp->potsys.pottable = NULL;
+    sysp->potsys.potkinds = NULL;
 }
 
-static void create_pottable(fmd_sys_t *sysp)
+static void pottable_create(fmd_sys_t *sysp)
 {
-    sysp->potsys.pottable = (pot_pair_t **)fmd_array_neat2d_create(sysp->potsys.atomkinds_num,
-                                                                   sysp->potsys.atomkinds_num,
-                                                                   sizeof(pot_pair_t));
+    sysp->potsys.pottable = (potpair_t **)fmd_array_neat2d_create(sysp->potsys.atomkinds_num,
+                                                                  sysp->potsys.atomkinds_num,
+                                                                  sizeof(potpair_t));
 }
 
 static unsigned pot_eam_find_iloc(fmd_sys_t *sysp, eam_t *eam, unsigned atomkind)
@@ -279,9 +286,9 @@ static unsigned pot_eam_find_iloc(fmd_sys_t *sysp, eam_t *eam, unsigned atomkind
 void fmd_pot_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomkind2, fmd_pot_t *pot)
 {
     // create the pottable if doesn't exist
-    if (sysp->potsys.pottable == NULL) create_pottable(sysp);
+    if (sysp->potsys.pottable == NULL) pottable_create(sysp);
 
-    //
+    // if potential is of eam alloy kind, find the local indexes
     if (pot->kind == POTKIND_EAM_ALLOY)
     {
         unsigned loc1, loc2;
@@ -301,6 +308,7 @@ void fmd_pot_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomkind2, fmd_
         sysp->potsys.pottable[atomkind2][atomkind1].jloc = loc1;
     }
 
+    //
     sysp->potsys.pottable[atomkind1][atomkind2].kind =
       sysp->potsys.pottable[atomkind2][atomkind1].kind = pot->kind;
     sysp->potsys.pottable[atomkind1][atomkind2].data =
@@ -326,4 +334,33 @@ fmd_pot_t *fmd_pot_lj_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomki
     fmd_pot_apply(sysp, atomkind1, atomkind2, pot);
 
     return pot;
+}
+
+static int potkind_compare(const void *a, const void *b)
+{
+    if ( *( (potkind_t *)a ) == *( (potkind_t *)b ) )
+        return 0;
+    else
+        return 1;
+}
+
+// TO-DO?: first, clean the list
+unsigned fmd_pot_potkinds_update(fmd_sys_t *sysp)
+{
+    unsigned count = 0;
+
+    for (unsigned i=0; i < sysp->potsys.atomkinds_num; i++)
+        for (unsigned j=0; j <= i; j++)
+        {
+            potpair_t *potpair = &sysp->potsys.pottable[i][j];
+
+            // add the potkind to potkinds list, if isn't already included there
+            if (fmd_list_find_custom(sysp->potsys.potkinds, &potpair->kind, potkind_compare) == NULL)
+            {
+                count++;
+                sysp->potsys.potkinds = fmd_list_prepend(sysp->potsys.potkinds, &potpair->kind);
+            }
+        }
+
+    return count;
 }

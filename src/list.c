@@ -57,6 +57,14 @@ unsigned fmd_list_length(list_t *list)
     return length;
 }
 
-list_t *fmd_list_item_remove(list_t *list, list_t *item)
+list_t *fmd_list_find_custom(list_t *list, const void *data, comparefunc_t func)
 {
+    while (list != NULL)
+    {
+        if (func(list->data, data) == 0)
+            return list;
+        list = list->next;
+    }
+
+    return NULL;
 }
