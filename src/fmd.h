@@ -80,6 +80,7 @@ double fmd_dync_getTimeStep(fmd_sys_t *system);
 void fmd_dync_setTimeStep(fmd_sys_t *system, double timeStep);
 double fmd_dync_getTime(fmd_sys_t *system);
 void fmd_dync_updateForces(fmd_sys_t *system);
+void fmd_dync_updateForcesLJ(fmd_sys_t *system);
 void fmd_dync_incTime(fmd_sys_t *system);
 void fmd_dync_setBerendsenThermostatParameter(fmd_sys_t *system, double parameter);
 void fmd_dync_velocityVerlet_takeFirstStep(fmd_sys_t *system, int useThermostat);
