@@ -11,7 +11,7 @@ shared: $(SHAREDLIB)
 $(SHAREDLIB): $(OBJS)
 	$(CC) $^ -shared -o $@ $(LFLAGS)
 base.o: $(BASE_H) md_ghost.h forces.h
-forces.o: forces.h $(BASE_H) cspline.h md_ghost.h
+forces.o: forces.h $(BASE_H) cspline.h md_ghost.h list.h
 md_ghost.o: $(BASE_H) md_ghost.h
 potential.o: $(BASE_H) cspline.h potential.h array.h list.h
 cspline.o: cspline.h
