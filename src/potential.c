@@ -272,7 +272,7 @@ static void pottable_create(fmd_sys_t *sysp)
                                                                   sysp->potsys.atomkinds_num,
                                                                   sizeof(potpair_t));
     for (unsigned i=0; i < sysp->potsys.atomkinds_num; i++)
-        for (unsigned j=0; j < sysp->potsys.atomkinds_num; j++)
+        for (unsigned j=0; j <= i; j++)
             sysp->potsys.pottable[i][j].kind = POTKIND_NONE;
 }
 

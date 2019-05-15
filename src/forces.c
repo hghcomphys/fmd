@@ -1,7 +1,7 @@
 /*
   forces.c: This file is part of Free Molecular Dynamics
 
-  Copyright (C) 2019 Arham Amouye Foumani
+  Copyright (C) 2019 Arham Amouye Foumani, Hossein Ghorbanfekr Kalashami
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include "base.h"
 #include "cspline.h"
 #include "md_ghost.h"
+#include "list.h"
 
 static void computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
 {
@@ -278,7 +279,7 @@ static void computeEAM_pass2(fmd_sys_t *sysp, double FembSum)
 */
 }
 
-static void fmd_computeEAM(fmd_sys_t *sysp)
+static void computeEAM(fmd_sys_t *sysp)
 {
     double FembSum;
 
@@ -290,36 +291,20 @@ static void fmd_computeEAM(fmd_sys_t *sysp)
     fmd_ghostparticles_delete(sysp);
 }
 
-void fmd_dync_updateForces(fmd_sys_t *sysp)
-{
-    if (sysp->potsys.potkinds == NULL)  // just for one time
-        fmd_pot_potkinds_update(sysp);
-
-    if (sysp->potsys.potkinds_num == 1)
-    {
-        //fmd_computeEAM(sysp);
-    }
-}
-
-
-// LJ potential
 static void computeLJ(fmd_sys_t *sysp)
 {
-    const double epsilon=0.01029849, sigma=3.4, cutoff=8.5;
     int jc[3], kc[3];
     int d;
     TParticleListItem *item1_p, *item2_p;
-    const double r_cutSqd = cutoff*cutoff;
     double r2, rv[3];
-    int element_i, element_j;
     int ic0, ic1, ic2;
     double potEnergy = 0.0;
     double F[3];
+    potpair_t **pottable = sysp->potsys.pottable;
 
     // iterate over all cells(lists)
-#pragma omp parallel for private(ic0,ic1,ic2,item1_p,d,element_i,kc,jc,item2_p,rv,r2,F,element_j) \
-      shared(sysp) default(none) collapse(3) reduction(+:potEnergy) schedule(static,1)
-
+    #pragma omp parallel for private(ic0,ic1,ic2,item1_p,d,kc,jc,item2_p,rv,r2,F) \
+      shared(sysp,pottable) default(none) collapse(3) reduction(+:potEnergy) schedule(static,1)
     for (ic0 = sysp->subDomain.ic_start[0]; ic0 < sysp->subDomain.ic_stop[0]; ic0++)
         for (ic1 = sysp->subDomain.ic_start[1]; ic1 < sysp->subDomain.ic_stop[1]; ic1++)
             for (ic2 = sysp->subDomain.ic_start[2]; ic2 < sysp->subDomain.ic_stop[2]; ic2++)
@@ -330,11 +315,10 @@ static void computeLJ(fmd_sys_t *sysp)
                     if (!(sysp->activeGroup == -1 || item1_p->P.groupID == sysp->activeGroup))
                         continue;
 
+                    unsigned atomkind1 = item1_p->P.elementID;
+
                     for (d=0; d<3; d++)
                         F[d] = 0.0;
-
-                    //element_i = item1_p->P.elementID;
-                    //rho_i = sysp->EAM.elements[element_i].rho;
 
                     // iterate over neighbor cells of cell ic
                     for (kc[0]=ic0-1; kc[0]<=ic0+1; kc[0]++)
@@ -369,21 +353,26 @@ static void computeLJ(fmd_sys_t *sysp)
                                             else
                                                 rv[d] = item1_p->P.x[d] - item2_p->P.x[d];
                                         }
+
                                         r2 = SQR(rv[0])+SQR(rv[1])+SQR(rv[2]);
-                                        if (r2 < r_cutSqd)
+                                        unsigned atomkind2 = item2_p->P.elementID;
+                                        LJ_6_12_t *lj = (LJ_6_12_t *)pottable[atomkind1][atomkind2].data;
+
+                                        if (r2 < lj->cutoff_sqr)
                                         {
-                                            double inv_r2, inv_rs2, inv_rs6;
+                                            double inv_r2, inv_rs2, inv_rs6, inv_rs12;
 
                                             // force, F = -(d/dr)U
                                             inv_r2 = 1.0/r2;
-                                            inv_rs2 = sigma*sigma*inv_r2;
-                                            inv_rs6 = inv_rs2*inv_rs2*inv_rs2;
-                                            for (d=0; d<3; d++) {
-                                                F[d] += rv[d]*inv_r2*(inv_rs6*inv_rs6 - 0.5*inv_rs6);
-                                            }
+                                            inv_rs2 = SQR(lj->sig) * inv_r2;
+                                            inv_rs6 = inv_rs2 * inv_rs2 * inv_rs2;
+                                            inv_rs12 = SQR(inv_rs6);
+                                            double factor = lj->eps * inv_r2 * (inv_rs12 - 0.5*inv_rs6);
+                                            for (d=0; d<3; d++)
+                                                F[d] += rv[d] * factor;
 
                                             // potential energy, U = 4*eps*( (sig/r)^12 - (sig/r)^6 )
-                                            potEnergy += (inv_rs6*inv_rs6 - inv_rs6);
+                                            potEnergy += lj->eps * (inv_rs12 - inv_rs6);
 
                                             // pressure
                                             /*for (d=0; d<3; d++) {
@@ -397,22 +386,32 @@ static void computeLJ(fmd_sys_t *sysp)
                     }
 
                     for (d=0; d<3; d++)
-                        item1_p->F[d] = 48.0*epsilon*F[d];
+                        item1_p->F[d] = 48.0 * F[d];
                 }
             }
 
-    potEnergy = 2.0*epsilon*potEnergy;
+    potEnergy *= 2.0;
     MPI_Allreduce(&potEnergy, &sysp->totalPotentialEnergy, 1, MPI_DOUBLE, MPI_SUM, sysp->MD_comm);
 }
 
-static void fmd_computeLJ(fmd_sys_t *sysp)
+void fmd_dync_updateForces(fmd_sys_t *sysp)
 {
-    fmd_ghostparticles_init(sysp);
-    computeLJ(sysp);
-    fmd_ghostparticles_delete(sysp);
-}
+    if (sysp->potsys.potkinds == NULL)  // just for one time
+        fmd_pot_potkinds_update(sysp);
 
-void fmd_dync_updateForcesLJ(fmd_sys_t *sysp)
-{
-    fmd_computeLJ(sysp);
+    fmd_ghostparticles_init(sysp);
+
+    if (sysp->potsys.potkinds_num == 1)
+    {
+        potkind_t potkind = *(potkind_t *)(sysp->potsys.potkinds->data);
+
+        switch (potkind)
+        {
+            case POTKIND_LJ_6_12:
+                computeLJ(sysp);
+                break;
+        }
+    }
+
+    fmd_ghostparticles_delete(sysp);
 }

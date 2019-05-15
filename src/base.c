@@ -192,7 +192,6 @@ void compLocOrdParam(fmd_sys_t *sysp)
 
 void fmd_dync_velocityVerlet_takeFirstStep(fmd_sys_t *sysp, int useThermostat)
 {
-/*
     int ic[3];
     int d;
     TParticleListItem *item_p, **item_pp;
@@ -217,7 +216,7 @@ void fmd_dync_velocityVerlet_takeFirstStep(fmd_sys_t *sysp, int useThermostat)
             }
 
             itemDestroyed = 0;
-            mass = sysp->EAM.elements[item_p->P.elementID].mass;
+            mass = sysp->potsys.atomkinds[item_p->P.elementID].mass;
 
             for (d=0; d<3; d++)
             {
@@ -252,12 +251,10 @@ void fmd_dync_velocityVerlet_takeFirstStep(fmd_sys_t *sysp, int useThermostat)
         }
     }
     refreshGrid(sysp, 0);
-*/
 }
 
 int fmd_dync_velocityVerlet_takeLastStep(fmd_sys_t *sysp)
 {
-/*
     int ic[3];
     int d;
     TParticleListItem *item_p;
@@ -301,7 +298,7 @@ int fmd_dync_velocityVerlet_takeLastStep(fmd_sys_t *sysp)
                     if (!(sysp->activeGroup == -1 || item_p->P.groupID == sysp->activeGroup))
                         continue;
                     particlesNum++;
-                    mass = sysp->EAM.elements[item_p->P.elementID].mass;
+                    mass = sysp->potsys.atomkinds[item_p->P.elementID].mass;
                     for (d=0; d<3; d++)
                     {
                         item_p->P.v[d] += sysp->delta_t * 0.5 / mass * item_p->F[d];
@@ -353,7 +350,6 @@ int fmd_dync_velocityVerlet_takeLastStep(fmd_sys_t *sysp)
     sysp->globalTemperature = m_vSqd_SumSum / (3.0 * sysp->activeGroupParticlesNum * K_BOLTZMANN);
 
     return returnVal;
-*/
 }
 
 // not correct under periodic boundary conditions
@@ -539,7 +535,6 @@ void fmd_matt_addVelocity(fmd_sys_t *sysp, int groupID, double vx, double vy, do
 
 void fmd_matt_distribute(fmd_sys_t *sysp)
 {
-/*
     TParticleListItem *item_p;
     int i, k, d, nct, sum_length;
     int ic[3], *ic_length;
@@ -562,7 +557,7 @@ void fmd_matt_distribute(fmd_sys_t *sysp)
         ITERATE(ic, threeZeros, sysp->nc)
             for (item_p=sysp->global_grid[ic[0]][ic[1]][ic[2]]; item_p != NULL; item_p = item_p->next_p)
             {
-                mass = sysp->EAM.elements[item_p->P.elementID].mass;
+                mass = sysp->potsys.atomkinds[item_p->P.elementID].mass;
                 for (d=0; d<3; d++)
                     m_vSqd_Sum += mass * SQR(item_p->P.v[d]);
             }
@@ -668,7 +663,6 @@ void fmd_matt_distribute(fmd_sys_t *sysp)
     sysp->totalKineticEnergy = 3.0/2.0 * sysp->totalNoOfParticles * K_BOLTZMANN * sysp->globalTemperature;
     sysp->globalGridExists = 0;
     sysp->particlesDistributed = 1;
-*/
 }
 
 void fmd_subd_init(fmd_sys_t *sysp)
@@ -907,7 +901,6 @@ void restoreBackups(fmd_sys_t *sysp)
 
 void fmd_matt_saveConfiguration(fmd_sys_t *sysp)
 {
-/*
     int ic[3];
     TParticleListItem *item_p;
     TXYZ_Struct *localData, *globalData;
@@ -995,7 +988,7 @@ void fmd_matt_saveConfiguration(fmd_sys_t *sysp)
                 sprintf(configPath, "%s%05d.csv", sysp->saveDirectory, sysp->_fileIndex++);
                 sysp->configFilep = fopen(configPath, "w");
                 handleFileOpenError(sysp->configFilep, configPath);
-                for (i=0; i < sysp->EAM.elementsNo; i++)
+                for (i=0; i < sysp->potsys.atomkinds_num; i++)
                 {
                     for (k=0; k < sysp->totalNoOfParticles; k++)
                         if (globalData[k].elementID == i)
@@ -1011,18 +1004,18 @@ void fmd_matt_saveConfiguration(fmd_sys_t *sysp)
                 sprintf(configPath, "%s%05d.vtf", sysp->saveDirectory, sysp->_fileIndex++);
                 sysp->configFilep = fopen(configPath, "w");
                 handleFileOpenError(sysp->configFilep, configPath);
-                for (i=0; i < sysp->EAM.elementsNo; i++)
+                for (i=0; i < sysp->potsys.atomkinds_num; i++)
                 {
                     int count = 0;
                     for (k=0; k < sysp->totalNoOfParticles; k++)
                         if (globalData[k].elementID == i)
                             count++;
                     fprintf(sysp->configFilep, "atom %d:%d\tname %s\n", atomID,
-                     atomID+count-1, sysp->EAM.elements[i].name);
+                     atomID+count-1, sysp->potsys.atomkinds[i].name);
                     atomID += count;
                 }
                 atomID = 0;
-                for (i=0; i < sysp->EAM.elementsNo; i++)
+                for (i=0; i < sysp->potsys.atomkinds_num; i++)
                 {
                     for (k=0; k < sysp->totalNoOfParticles; k++)
                         if (globalData[k].elementID == i)
@@ -1033,7 +1026,7 @@ void fmd_matt_saveConfiguration(fmd_sys_t *sysp)
                         }
                 }
                 fprintf(sysp->configFilep, "timestep\n");
-                for (i=0; i < sysp->EAM.elementsNo; i++)
+                for (i=0; i < sysp->potsys.atomkinds_num; i++)
                 {
                     for (k=0; k < sysp->totalNoOfParticles; k++)
                         if (globalData[k].elementID == i)
@@ -1048,9 +1041,9 @@ void fmd_matt_saveConfiguration(fmd_sys_t *sysp)
         if (sysp->saveConfigMode == scmXYZSeparate || sysp->saveConfigMode == scmXYZParticlesNum)
         {
             fprintf(sysp->configFilep, "%d\n\n", sysp->totalNoOfParticles);
-            for (i=0; i < sysp->EAM.elementsNo; i++)
+            for (i=0; i < sysp->potsys.atomkinds_num; i++)
             {
-                elementName = sysp->EAM.elements[i].name;
+                elementName = sysp->potsys.atomkinds[i].name;
                 for (k=0; k < sysp->totalNoOfParticles; k++)
                     if (globalData[k].elementID == i)
                         fprintf(sysp->configFilep, "%s\t%.2f\t%.2f\t%.2f\n",
@@ -1064,7 +1057,6 @@ void fmd_matt_saveConfiguration(fmd_sys_t *sysp)
          sysp->saveConfigMode == scmVTF)
             fclose(sysp->configFilep);
     }
-*/
 }
 
 void fmd_io_saveState(fmd_sys_t *sysp, char *filename)
@@ -1241,7 +1233,6 @@ void fmd_box_createGrid(fmd_sys_t *sysp, double cutoff)
 void fmd_matt_makeCuboidFCC(fmd_sys_t *sysp, double x, double y, double z,
   int dimx, int dimy, int dimz, double latticeParameter, int elementID, int groupID)
 {
-/*
     if (sysp->subDomain.myrank == MAINPROCESS(sysp->subDomain.numprocs))
     {
         double mass, stdDevVelocity;
@@ -1259,7 +1250,7 @@ void fmd_matt_makeCuboidFCC(fmd_sys_t *sysp, double x, double y, double z,
         gsl_rng_set(random_fast, time(NULL));
 
         int atomsNum = 4 * dimx * dimy * dimz;
-        mass = sysp->EAM.elements[elementID].mass;
+        mass = sysp->potsys.atomkinds[elementID].mass;
         stdDevVelocity = sqrt(K_BOLTZMANN * sysp->desiredTemperature / mass);
         ITERATE(crystalCell, threeZeros, dims)
             for (i=0; i<4; i++)
@@ -1292,7 +1283,6 @@ void fmd_matt_makeCuboidFCC(fmd_sys_t *sysp, double x, double y, double z,
 
         sysp->totalNoOfParticles += atomsNum;
     }
-*/
 }
 
 void fmd_io_setSaveDirectory(fmd_sys_t *sysp, char *directory)
@@ -1371,7 +1361,6 @@ double fmd_matt_getTotalEnergy(fmd_sys_t *sysp)
 
 void fmd_matt_giveTemperature(fmd_sys_t *sysp, int groupID)
 {
-/*
     TCell ***grid;
     int *start, *stop;
     int ic[3];
@@ -1405,7 +1394,7 @@ void fmd_matt_giveTemperature(fmd_sys_t *sysp, int groupID)
         {
             if (groupID == -1 || groupID == item_p->P.groupID)
             {
-                double mass = sysp->EAM.elements[item_p->P.elementID].mass;
+                double mass = sysp->potsys.atomkinds[item_p->P.elementID].mass;
                 double stdDevVelocity = sqrt(K_BOLTZMANN * sysp->desiredTemperature / mass);
 
                 for (d=0; d<3; d++)
@@ -1414,7 +1403,6 @@ void fmd_matt_giveTemperature(fmd_sys_t *sysp, int groupID)
         }
 
     gsl_rng_free(rng);
-*/
 }
 
 double fmd_matt_getGlobalTemperature(fmd_sys_t *sysp)
