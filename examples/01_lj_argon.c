@@ -106,9 +106,6 @@ int main(int argc, char *argv[])
     // save system's final state in a file
     fmd_io_saveState(sys, "state0.stt");
 
-    // release memory taken for EAM potential
-    fmd_pot_eam_free(sys);
-
     // another report
     fmd_io_printf(sys, "The run took about %.3f seconds to finish.\n", fmd_proc_getWallTime(sys));
 
