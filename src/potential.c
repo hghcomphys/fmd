@@ -235,7 +235,6 @@ void fmd_pot_setAtomKinds(fmd_sys_t *sysp, unsigned number, fmd_atomkind_name_t 
         sysp->potsys.atomkinds[i].mass = masses[i];
         strcpy(sysp->potsys.atomkinds[i].name, names[i]);
         sysp->potsys.atomkinds[i].aux = (atomkind_aux_t *)malloc(sizeof(atomkind_aux_t));
-        // TO-DO: initialize aux
     }
 }
 
@@ -300,9 +299,9 @@ void fmd_pot_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomkind2, fmd_
     // create the pottable if doesn't exist
     if (sysp->potsys.pottable == NULL) pottable_create(sysp);
 
-    // if potential is of eam alloy kind, find the local indexes
     if (pot->kind == POTKIND_EAM_ALLOY)
     {
+        // find the local indexes
         unsigned loc1, loc2;
 
         loc1 = pot_eam_find_iloc(sysp, pot->data, atomkind1);
@@ -310,7 +309,7 @@ void fmd_pot_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomkind2, fmd_
 
         if (loc1 == -1 || loc2 == -1)
         {
-            // error should be handled here
+            // TO-DO: error should be handled here
             assert(loc1 != -1 && loc2 != -1);
         }
 
@@ -318,6 +317,10 @@ void fmd_pot_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomkind2, fmd_
         sysp->potsys.pottable[atomkind1][atomkind2].jloc = loc2;
         sysp->potsys.pottable[atomkind2][atomkind1].iloc = loc2;
         sysp->potsys.pottable[atomkind2][atomkind1].jloc = loc1;
+
+        // set eam_F0
+        sysp->potsys.atomkinds[atomkind1].aux->eam_F0 = ((eam_t *)pot->data)->elements[loc1].F[0];
+        sysp->potsys.atomkinds[atomkind2].aux->eam_F0 = ((eam_t *)pot->data)->elements[loc2].F[0];
     }
 
     //
@@ -359,7 +362,7 @@ static int potkind_compare(const void *a, const void *b)
 // TO-DO?: first, clean the list
 void fmd_pot_potkinds_update(fmd_sys_t *sysp)
 {
-    // error should be handled here
+    // TO-DO: error should be handled here
     assert(sysp->potsys.pottable != NULL);
 
     sysp->potsys.potkinds_num = 0;
@@ -369,7 +372,7 @@ void fmd_pot_potkinds_update(fmd_sys_t *sysp)
         {
             potpair_t *potpair = &sysp->potsys.pottable[i][j];
 
-            // error should be handled here
+            // TO-DO: error should be handled here
             assert(potpair->kind != POTKIND_NONE);
 
             // add the potkind to potkinds list, if isn't already included there
