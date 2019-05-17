@@ -1,11 +1,11 @@
 /* Assuming that FMD is already compiled in src directory, this example
    can be compiled with the following command:
 
-   $ gcc example2.c -L../src/  -Wl,-R../src/ -lfmd -lm -O3 -o example2.x
+   $ gcc 02_collision.c -L../src/  -Wl,-R../src/ -lfmd -lm -O3 -o 02_collision.x
 
    and can be executed by
 
-   $ mpirun -n 2 ./example2.x
+   $ mpirun -n 2 ./02_collision.x
 */
 
 #include <math.h>
@@ -39,11 +39,19 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    // let's have only copper atoms
+    fmd_atomkind_name_t name[1] = {"Cu"};
+    double mass[1] = {63.546 * FMD_PHYS_AMU};
+    fmd_pot_setAtomKinds(sys, 1, name, mass);
+
     // load the EAM file into memory; can be called only after fmd_box_setSubDomains()
-    fmd_pot_eam_init(sys, "../potentials/Cu01.eam.alloy");
+    fmd_pot_t *pot = fmd_pot_eam_alloy_load(sys, "../potentials/Cu01.eam.alloy");
+
+    // apply the potential
+    fmd_pot_apply(sys, 0, 0, pot);
 
     // get the EAM potential cutoff radius and create the box grid by using it
-    double cutoff = fmd_pot_eam_getCutoffRadius(sys);
+    double cutoff = fmd_pot_eam_getCutoffRadius(sys, pot);
     fmd_box_createGrid(sys, cutoff);
 
     // set the desired temperature (in Kelvin)
@@ -119,9 +127,6 @@ int main(int argc, char *argv[])
 
     // save system's final state in a file
     //fmd_io_saveState(sys, "state0.stt");
-
-    // release memory taken for EAM potential
-    fmd_pot_eam_free(sys);
 
     // another report
     fmd_io_printf(sys, "The run took about %.3f seconds to finish.\n", fmd_proc_getWallTime(sys));
