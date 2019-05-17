@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    // let's have only Argon atoms
+    // let's have only argon atoms
     fmd_atomkind_name_t name[1] = {"Ar"};
     double mass[1] = {39.948 * FMD_PHYS_AMU};
     fmd_pot_setAtomKinds(sys, 1, name, mass);

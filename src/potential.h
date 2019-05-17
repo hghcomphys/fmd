@@ -38,7 +38,7 @@ typedef struct
 typedef struct
 {
     eam_element_t *elements;
-    double drho, dr, dr2, cutoff;
+    double drho, dr, dr2, cutoff_sqr;
     int elementsNo;
     int Nrho, Nr, Nr2;
 } eam_t;
@@ -72,8 +72,14 @@ typedef struct
 
 typedef struct
 {
+    double eam_F0;
+} atomkind_aux_t;
+
+typedef struct
+{
     double mass;
     fmd_atomkind_name_t name;
+    atomkind_aux_t *aux;
 } atomkind_t;
 
 typedef struct list_t list_t;

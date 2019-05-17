@@ -25,20 +25,20 @@
 
 static void computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
 {
-/*
     int jc[3], kc[3];
     int d, ir2, irho, ir2_h, irho_h;
     TParticleListItem *item1_p, *item2_p;
-    const double r_cutSqd = SQR(sysp->EAM.cutoff);
     double r2, rv[3];
-    double rho_host, *rho, *rhoDD, *F, *F_DD;
+    double *rho, *rhoDD, *F, *F_DD;
     double a, b, h;
     int ic0, ic1, ic2;
     double sum=0;
+    potpair_t **pottable = sysp->potsys.pottable;
 
     // iterate over all cells(lists)
-    #pragma omp parallel for private(ic0,ic1,ic2,item1_p,rho_host,kc,jc,item2_p,d,rv,r2,h,ir2,ir2_h,a,b,rho,rhoDD,F, \
-      F_DD,irho,irho_h) shared(sysp) default(none) collapse(3) reduction(+:sum) schedule(static,1)
+    #pragma omp parallel for private(ic0,ic1,ic2,item1_p,kc,jc,item2_p,d,rv,r2,h,ir2,ir2_h,a,b,rho, \
+      rhoDD,F,F_DD,irho,irho_h) shared(sysp,pottable) default(none) collapse(3) reduction(+:sum) \
+      schedule(static,1)
     for (ic0 = sysp->subDomain.ic_start[0]; ic0 < sysp->subDomain.ic_stop[0]; ic0++)
     for (ic1 = sysp->subDomain.ic_start[1]; ic1 < sysp->subDomain.ic_stop[1]; ic1++)
     for (ic2 = sysp->subDomain.ic_start[2]; ic2 < sysp->subDomain.ic_stop[2]; ic2++)
@@ -48,7 +48,12 @@ static void computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
         {
             if (!(sysp->activeGroup == -1 || item1_p->P.groupID == sysp->activeGroup))
                 continue;
-            rho_host = 0.0;
+
+            eam_t *eam;
+            unsigned atomkind1, atomkind2;
+            atomkind1 = item1_p->P.elementID;
+
+            double rho_host = 0.0;
             // iterate over neighbor cells of cell ic
             for (kc[0]=ic0-1; kc[0]<=ic0+1; kc[0]++)
             {
@@ -64,6 +69,7 @@ static void computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
                         {
                             if (!(sysp->activeGroup == -1 || item2_p->P.groupID == sysp->activeGroup))
                                 continue;
+
                             if (item1_p != item2_p)
                             {
                                 for (d=0; d<3; d++)
@@ -82,16 +88,22 @@ static void computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
                                         rv[d] = item1_p->P.x[d] - item2_p->P.x[d];
                                 }
                                 r2 = SQR(rv[0])+SQR(rv[1])+SQR(rv[2]);
-                                if (r2 < r_cutSqd)
+
+                                atomkind2 = item2_p->P.elementID;
+                                eam = (eam_t *)pottable[atomkind1][atomkind2].data;
+
+                                if (r2 < eam->cutoff_sqr)
                                 {
-                                    h = sysp->EAM.dr2;
+                                    h = eam->dr2;
                                     ir2 = (int)(r2 / h);
                                     ir2_h = ir2 + 1;
                                     a = ir2_h - r2/h;
                                     b=1-a;
-                                    rho = sysp->EAM.elements[item2_p->P.elementID].rho;
+
+                                    unsigned jloc = pottable[atomkind1][atomkind2].jloc;
+                                    rho = eam->elements[jloc].rho;
 #ifdef USE_CSPLINE
-                                    rhoDD = sysp->EAM.elements[item2_p->P.elementID].rhoDD;
+                                    rhoDD = eam->elements[jloc].rhoDD;
                                     rho_host += SPLINE_VAL(a,b,rho,ir2,ir2_h,rhoDD,h);
 #else
                                     rho_host += rho[ir2]*a + rho[ir2_h]*b;
@@ -102,44 +114,51 @@ static void computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
                     }
                 }
             }
-            h = sysp->EAM.drho;
-            irho = (int)(rho_host / h);
-            assert(irho < sysp->EAM.Nrho-1);
-            irho_h = irho + 1;
-            F = sysp->EAM.elements[item1_p->P.elementID].F;
+
+            if (rho_host == 0.0)
+            {   // the first atom didn't see any other atom within its cutoff sphere
+                sum += sysp->potsys.atomkinds[atomkind1].aux->eam_F0;
+            }
+            else
+            {
+                h = eam->drho;
+                irho = (int)(rho_host / h);
+                assert(irho < eam->Nrho - 1);
+                irho_h = irho + 1;
+
+                unsigned iloc = pottable[atomkind1][atomkind2].iloc;
+                F = eam->elements[iloc].F;
 #ifdef USE_CSPLINE
-            F_DD = sysp->EAM.elements[item1_p->P.elementID].F_DD;
-            a = irho_h - rho_host/h;
-            b = 1-a;
-            item1_p->FembPrime = SPLINE_DERIV(a,b,F,irho,irho_h,F_DD,h);
-            sum += SPLINE_VAL(a,b,F,irho,irho_h,F_DD,h);
+                F_DD = eam->elements[iloc].F_DD;
+                a = irho_h - rho_host/h;
+                b = 1-a;
+                item1_p->FembPrime = SPLINE_DERIV(a,b,F,irho,irho_h,F_DD,h);
+                sum += SPLINE_VAL(a,b,F,irho,irho_h,F_DD,h);
 #else
-            item1_p->FembPrime = (F[irho_h] - F[irho]) / h;
-            sum += F[irho] + (rho_host - irho * h) * item1_p->FembPrime;
+                item1_p->FembPrime = (F[irho_h] - F[irho]) / h;
+                sum += F[irho] + (rho_host - irho * h) * item1_p->FembPrime;
 #endif
+            }
         }
     }
     *FembSum_p=sum;
-*/
 }
 
 static void computeEAM_pass2(fmd_sys_t *sysp, double FembSum)
 {
-/*
     int jc[3], kc[3];
     int d, ir2, ir2_h;
     TParticleListItem *item1_p, *item2_p;
-    const double r_cutSqd = SQR(sysp->EAM.cutoff);
     double r2, rv[3];
     double *rho_i, *rho_j, *phi;
     double *rho_iDD, *rho_jDD, *phiDD;
     double rho_ip, rho_jp;
     double mag;
     double sum[3];
-    int element_i, element_j;
     double phi_deriv;
     double a, b, h;
     int ic0, ic1, ic2;
+    potpair_t **pottable = sysp->potsys.pottable;
 #ifdef USE_TTM
     double mass;
     int ttm_index;
@@ -155,9 +174,9 @@ static void computeEAM_pass2(fmd_sys_t *sysp, double FembSum)
       shared(sysp,ttm_lattice_aux,ttm_useSuction,ttm_suctionWidth,ttm_suctionIntensity,ttm_pxx_compute, \
       ttm_pxx_pos) default(none) collapse(3) reduction(+:potEnergy,pxx) schedule(static,1)
 #else
-    #pragma omp parallel for private(ic0,ic1,ic2,item1_p,d,element_i,rho_i,rho_iDD,kc,jc,item2_p,rv,r2,h,ir2, \
-      ir2_h,element_j,phi,phiDD,a,b,phi_deriv,rho_ip,rho_jp,rho_jDD,rho_j,mag,sum) \
-      shared(sysp) default(none) collapse(3) reduction(+:potEnergy) schedule(static,1)
+    #pragma omp parallel for private(ic0,ic1,ic2,item1_p,d,rho_i,rho_iDD,kc,jc,item2_p,rv,r2,h,ir2, \
+      ir2_h,phi,phiDD,a,b,phi_deriv,rho_ip,rho_jp,rho_jDD,rho_j,mag,sum) \
+      shared(sysp,pottable) default(none) collapse(3) reduction(+:potEnergy) schedule(static,1)
 #endif
     for (ic0 = sysp->subDomain.ic_start[0]; ic0 < sysp->subDomain.ic_stop[0]; ic0++)
     for (ic1 = sysp->subDomain.ic_start[1]; ic1 < sysp->subDomain.ic_stop[1]; ic1++)
@@ -171,13 +190,14 @@ static void computeEAM_pass2(fmd_sys_t *sysp, double FembSum)
         {
             if (!(sysp->activeGroup == -1 || item1_p->P.groupID == sysp->activeGroup))
                 continue;
+
             for (d=0; d<3; d++)
                 sum[d] = 0.0;
-            element_i = item1_p->P.elementID;
-            rho_i = sysp->EAM.elements[element_i].rho;
-#ifdef USE_CSPLINE
-            rho_iDD = sysp->EAM.elements[element_i].rhoDD;
-#endif
+
+            eam_t *eam;
+            unsigned atomkind1, atomkind2;
+            atomkind1 = item1_p->P.elementID;
+
             // iterate over neighbor cells of cell ic
             for (kc[0]=ic0-1; kc[0]<=ic0+1; kc[0]++)
             {
@@ -211,25 +231,35 @@ static void computeEAM_pass2(fmd_sys_t *sysp, double FembSum)
                                         rv[d] = item1_p->P.x[d] - item2_p->P.x[d];
                                 }
                                 r2 = SQR(rv[0])+SQR(rv[1])+SQR(rv[2]);
-                                if (r2 < r_cutSqd)
+
+                                atomkind2 = item2_p->P.elementID;
+                                eam = (eam_t *)pottable[atomkind1][atomkind2].data;
+
+                                if (r2 < eam->cutoff_sqr)
                                 {
-                                    h = sysp->EAM.dr2;
+                                    h = eam->dr2;
                                     ir2 = (int)(r2 / h);
                                     ir2_h = ir2 + 1;
-                                    element_j = item2_p->P.elementID;
-                                    phi = sysp->EAM.elements[element_i].phi[element_j];
+                                    unsigned iloc = pottable[atomkind1][atomkind2].iloc;
+                                    unsigned jloc = pottable[atomkind1][atomkind2].jloc;
+
+                                    rho_i = eam->elements[iloc].rho;
 #ifdef USE_CSPLINE
-                                    phiDD = sysp->EAM.elements[element_i].phiDD[element_j];
+                                    rho_iDD = eam->elements[iloc].rhoDD;
+#endif
+                                    phi = eam->elements[iloc].phi[jloc];
+#ifdef USE_CSPLINE
+                                    phiDD = eam->elements[iloc].phiDD[jloc];
                                     a = ir2_h - r2/h;
                                     b = 1-a;
                                     phi_deriv = SPLINE_DERIV(a,b,phi,ir2,ir2_h,phiDD,h);
                                     rho_ip = SPLINE_DERIV(a,b,rho_i,ir2,ir2_h,rho_iDD,h);
-                                    if (element_j == element_i)
+                                    if (jloc == iloc)
                                         rho_jp = rho_ip;
                                     else
                                     {
-                                        rho_j = sysp->EAM.elements[element_j].rho;
-                                        rho_jDD = sysp->EAM.elements[element_j].rhoDD;
+                                        rho_j = eam->elements[jloc].rho;
+                                        rho_jDD = eam->elements[jloc].rhoDD;
                                         rho_jp = SPLINE_DERIV(a,b,rho_j,ir2,ir2_h,rho_jDD,h);
                                     }
 
@@ -237,7 +267,7 @@ static void computeEAM_pass2(fmd_sys_t *sysp, double FembSum)
                                           item2_p->FembPrime * rho_ip + phi_deriv);
                                     potEnergy += SPLINE_VAL(a,b,phi,ir2,ir2_h,phiDD,h);
 #else
-                                    rho_j = sysp->EAM.elements[element_j].rho;
+                                    rho_j = eam->elements[jloc].rho;
                                     mag = 2 * (item1_p->FembPrime * (rho_j[ir2_h] - rho_j[ir2]) +
                                                item2_p->FembPrime * (rho_i[ir2_h] - rho_i[ir2]) +
                                                                         (phi[ir2_h] - phi[ir2])) / h;
@@ -276,19 +306,6 @@ static void computeEAM_pass2(fmd_sys_t *sysp, double FembSum)
 #endif
     potEnergy = 0.5 * potEnergy + FembSum;
     MPI_Allreduce(&potEnergy, &sysp->totalPotentialEnergy, 1, MPI_DOUBLE, MPI_SUM, sysp->MD_comm);
-*/
-}
-
-static void computeEAM(fmd_sys_t *sysp)
-{
-    double FembSum;
-
-    fmd_ghostparticles_init(sysp);
-    if (sysp->iCompLocOrdParam) compLocOrdParam(sysp);
-    computeEAM_pass1(sysp, &FembSum);
-    fmd_ghostparticles_update_Femb(sysp);
-    computeEAM_pass2(sysp, FembSum);
-    fmd_ghostparticles_delete(sysp);
 }
 
 static void computeLJ(fmd_sys_t *sysp)
@@ -353,8 +370,8 @@ static void computeLJ(fmd_sys_t *sysp)
                                             else
                                                 rv[d] = item1_p->P.x[d] - item2_p->P.x[d];
                                         }
-
                                         r2 = SQR(rv[0])+SQR(rv[1])+SQR(rv[2]);
+
                                         unsigned atomkind2 = item2_p->P.elementID;
                                         LJ_6_12_t *lj = (LJ_6_12_t *)pottable[atomkind1][atomkind2].data;
 
@@ -409,6 +426,13 @@ void fmd_dync_updateForces(fmd_sys_t *sysp)
         {
             case POTKIND_LJ_6_12:
                 computeLJ(sysp);
+                break;
+            case POTKIND_EAM_ALLOY:
+                if (sysp->iCompLocOrdParam) compLocOrdParam(sysp);
+                double FembSum;
+                computeEAM_pass1(sysp, &FembSum);
+                fmd_ghostparticles_update_Femb(sysp);
+                computeEAM_pass2(sysp, FembSum);
                 break;
         }
     }

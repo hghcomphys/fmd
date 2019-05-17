@@ -92,9 +92,12 @@ static eam_t *load_DYNAMOsetfl(fmd_sys_t *sysp, char *filePath)
         eam->elements = (eam_element_t *)malloc(eam->elementsNo * sizeof(eam_element_t));
         for (i=0; i < eam->elementsNo; i++)
             fscanf(fp, "%s", eam->elements[i].name);
-        fscanf(fp, "%d%lf%d%lf%lf", &eam->Nrho, &eam->drho, &eam->Nr, &eam->dr, &eam->cutoff);
+
+        double cutoff;
+        fscanf(fp, "%d%lf%d%lf%lf", &eam->Nrho, &eam->drho, &eam->Nr, &eam->dr, &cutoff);
         eam->Nr2 = (eam->Nr += 2);
-        assert( (eam->Nr-1) * eam->dr > eam->cutoff );
+        assert( (eam->Nr-1) * eam->dr > cutoff );
+        eam->cutoff_sqr = SQR(cutoff);
         eam->dr2 = SQR((eam->Nr-1) * eam->dr) / (eam->Nr2-1);
 
         double *tempArray = (double *)malloc(eam->Nr * sizeof(double));
@@ -210,9 +213,12 @@ fmd_pot_t *fmd_pot_eam_alloy_load(fmd_sys_t *sysp, char *filePath)
     return pot;
 }
 
-double fmd_pot_eam_getCutoffRadius(fmd_sys_t *sysp)
+double fmd_pot_eam_getCutoffRadius(fmd_sys_t *sysp, fmd_pot_t *pot)
 {
-    //return eam->cutoff;
+    // TO-DO: handle error
+    assert(pot->kind == POTKIND_EAM_ALLOY);
+
+    return sqrt(((eam_t *)pot->data)->cutoff_sqr);
 }
 
 double fmd_pot_eam_getLatticeParameter(fmd_sys_t *sysp, int element)
@@ -228,6 +234,8 @@ void fmd_pot_setAtomKinds(fmd_sys_t *sysp, unsigned number, fmd_atomkind_name_t 
     {
         sysp->potsys.atomkinds[i].mass = masses[i];
         strcpy(sysp->potsys.atomkinds[i].name, names[i]);
+        sysp->potsys.atomkinds[i].aux = (atomkind_aux_t *)malloc(sizeof(atomkind_aux_t));
+        // TO-DO: initialize aux
     }
 }
 
@@ -235,6 +243,7 @@ void fmd_pot_free(fmd_sys_t *sysp)
 {
     if (sysp->potsys.atomkinds != NULL)
     {
+        // TO-DO: free aux
         free(sysp->potsys.atomkinds);
         sysp->potsys.atomkinds = NULL;
     }
@@ -247,13 +256,13 @@ void fmd_pot_free(fmd_sys_t *sysp)
 
     if (sysp->potsys.potlist != NULL)
     {
-        // FREE_POTLIST
+        // TO-DO: FREE_POTLIST
         // sysp->potsys.potlist = NULL;
     }
 
     if (sysp->potsys.potkinds != NULL)
     {
-        // FREE_POTKINDS
+        // TO-DO: FREE_POTKINDS
         // sysp->potsys.potkinds = NULL;
     }
 }
