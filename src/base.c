@@ -1230,8 +1230,8 @@ void fmd_box_createGrid(fmd_sys_t *sysp, double cutoff)
     sysp->cutoffRadius = cutoff;
 }
 
-void fmd_matt_makeCuboidFCC(fmd_sys_t *sysp, double x, double y, double z,
-  int dimx, int dimy, int dimz, double latticeParameter, int elementID, int groupID)
+void fmd_matt_makeCuboidFCC_alloy(fmd_sys_t *sysp, double x, double y, double z,
+  int dimx, int dimy, int dimz, double latticeParameter, double *proportions, int groupID)
 {
     if (sysp->subDomain.myrank == MAINPROCESS(sysp->subDomain.numprocs))
     {
@@ -1245,30 +1245,43 @@ void fmd_matt_makeCuboidFCC(fmd_sys_t *sysp, double x, double y, double z,
         double r0[3] = {x, y, z};
         int i, d;
 
-        gsl_rng *random_fast;
-        random_fast = gsl_rng_alloc(gsl_rng_rand);
-        gsl_rng_set(random_fast, time(NULL));
+        double *prps_cumult = (double *)malloc(sysp->potsys.atomkinds_num * sizeof(double));
+        double prps_sum = 0.0;
+        for (i=0; i < sysp->potsys.atomkinds_num; i++)
+            prps_cumult[i] = (prps_sum += proportions[i]);
+
+        gsl_rng *rng;
+        rng = gsl_rng_alloc(gsl_rng_mt19937);
+        gsl_rng_set(rng, time(NULL));
 
         int atomsNum = 4 * dimx * dimy * dimz;
-        mass = sysp->potsys.atomkinds[elementID].mass;
-        stdDevVelocity = sqrt(K_BOLTZMANN * sysp->desiredTemperature / mass);
+
         ITERATE(crystalCell, threeZeros, dims)
             for (i=0; i<4; i++)
             {
                 item_p = (TParticleListItem *)malloc(sizeof(TParticleListItem));
-                item_p->P.elementID = elementID;
+
+                double rn = prps_sum * gsl_rng_uniform(rng);
+                int j;
+                for (j=0; j < sysp->potsys.atomkinds_num; j++)
+                    if (rn < prps_cumult[j]) break;
+                item_p->P.elementID = j;
+
+                mass = sysp->potsys.atomkinds[j].mass;
+                stdDevVelocity = sqrt(K_BOLTZMANN * sysp->desiredTemperature / mass);
+
                 item_p->P.groupID = -2;
                 for (d=0; d<3; d++)
                 {
                     item_p->P.x[d] = r0[d] + (crystalCell[d] + .25 + rFCC[i][d]) * latticeParameter;
-                    item_p->P.v[d] = gsl_ran_gaussian_ziggurat(random_fast, stdDevVelocity);
+                    item_p->P.v[d] = gsl_ran_gaussian_ziggurat(rng, stdDevVelocity);
                     momentumSum[d] += mass * item_p->P.v[d];
                     ic[d] = (int)floor(item_p->P.x[d] / sysp->cellh[d]);
                 }
                 insertInList(&sysp->global_grid[ic[0]][ic[1]][ic[2]], item_p);
             }
 
-        gsl_rng_free(random_fast);
+        gsl_rng_free(rng);
 
         ITERATE(ic, threeZeros, sysp->nc)
             for (item_p=sysp->global_grid[ic[0]][ic[1]][ic[2]]; item_p != NULL; item_p = item_p->next_p)
@@ -1282,7 +1295,20 @@ void fmd_matt_makeCuboidFCC(fmd_sys_t *sysp, double x, double y, double z,
             }
 
         sysp->totalNoOfParticles += atomsNum;
+
+        free(prps_cumult);
     }
+}
+
+void fmd_matt_makeCuboidFCC(fmd_sys_t *sysp, double x, double y, double z,
+  int dimx, int dimy, int dimz, double latticeParameter, int elementID, int groupID)
+{
+    double *proportions = (double *)calloc(sysp->potsys.atomkinds_num, sizeof(double));
+    proportions[elementID] = 1.0;
+
+    fmd_matt_makeCuboidFCC_alloy(sysp, x, y, z, dimx, dimy, dimz, latticeParameter, proportions, groupID);
+
+    free(proportions);
 }
 
 void fmd_io_setSaveDirectory(fmd_sys_t *sysp, char *directory)
