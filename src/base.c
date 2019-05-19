@@ -715,7 +715,6 @@ void insertInList(TParticleListItem **root_pp, TParticleListItem *item_p)
 
 void fmd_io_loadState(fmd_sys_t *sysp, char *file, int useTime)
 {
-/*
     TParticleListItem *item_p;
     FILE *fp;
     char name[3];
@@ -775,8 +774,8 @@ void fmd_io_loadState(fmd_sys_t *sysp, char *file, int useTime)
         {
             item_p = (TParticleListItem *)malloc(sizeof(TParticleListItem));
             fscanf(fp, "%s%d", name, &item_p->P.groupID);
-            for (j=0; j < sysp->EAM.elementsNo; j++)
-                if (strcmp(name, sysp->EAM.elements[j].name) == 0)
+            for (j=0; j < sysp->potsys.atomkinds_num; j++)
+                if (strcmp(name, sysp->potsys.atomkinds[j].name) == 0)
                 {
                     item_p->P.elementID = j;
                     break;
@@ -789,7 +788,6 @@ void fmd_io_loadState(fmd_sys_t *sysp, char *file, int useTime)
         }
         fclose(fp);
     }
-*/
 }
 
 static void refreshGrid(fmd_sys_t *sysp, int reverse)
@@ -1061,7 +1059,6 @@ void fmd_matt_saveConfiguration(fmd_sys_t *sysp)
 
 void fmd_io_saveState(fmd_sys_t *sysp, char *filename)
 {
-/*
     TParticle *is_particles, *P_p;
     int *nums;
     int i, k, ic[3];
@@ -1088,7 +1085,7 @@ void fmd_io_saveState(fmd_sys_t *sysp, char *filename)
         ITERATE(ic, sysp->subDomain.ic_start, sysp->subDomain.ic_stop)
             for (item_p = sysp->subDomain.grid[ic[0]][ic[1]][ic[2]]; item_p != NULL; item_p = item_p->next_p)
             {
-                fprintf(fp, "%s %d\n", sysp->EAM.elements[item_p->P.elementID].name, item_p->P.groupID);
+                fprintf(fp, "%s %d\n", sysp->potsys.atomkinds[item_p->P.elementID].name, item_p->P.groupID);
                 fprintf(fp, "%.16e\t%.16e\t%.16e\n", item_p->P.x[0], item_p->P.x[1], item_p->P.x[2]);
                 fprintf(fp, "%.16e\t%.16e\t%.16e\n", item_p->P.v[0], item_p->P.v[1], item_p->P.v[2]);
             }
@@ -1100,7 +1097,7 @@ void fmd_io_saveState(fmd_sys_t *sysp, char *filename)
             for (k=0; k < nums[i]; k++)
             {
                 P_p = is_particles + k;
-                fprintf(fp, "%s %d\n", sysp->EAM.elements[P_p->elementID].name, P_p->groupID);
+                fprintf(fp, "%s %d\n", sysp->potsys.atomkinds[P_p->elementID].name, P_p->groupID);
                 fprintf(fp, "%.16e\t%.16e\t%.16e\n", P_p->x[0], P_p->x[1], P_p->x[2]);
                 fprintf(fp, "%.16e\t%.16e\t%.16e\n", P_p->v[0], P_p->v[1], P_p->v[2]);
             }
@@ -1122,7 +1119,6 @@ void fmd_io_saveState(fmd_sys_t *sysp, char *filename)
             MAINPROCESS(sysp->subDomain.numprocs), 150, sysp->MD_comm);
         free(is_particles);
     }
-*/
 }
 
 void fmd_matt_setDesiredTemperature(fmd_sys_t *sysp, double desiredTemperature)
