@@ -94,6 +94,18 @@ class Calculator:
         self._lib.fmd_pot_eam_getCutoffRadius.restype = ct.c_double
         return self._lib.fmd_pot_eam_getCutoffRadius(self._sys_none, self._dummy)
 
+    # NEW
+    def set_potential_atom_kinds(self, number, names, masses):
+        self._lib.fmd_pot_setAtomKinds.argtypes = (ct.c_void_p, ct.c_int, ct.c_void_p, ct.c_void_p)
+        self._lib.fmd_pot_setAtomKinds(self._sys_none, number, [str(name).encode('utf-8') for name in names], masses)
+        return self
+
+    # NEW
+    def apply_potential_lj(self, atom_kind1, atom_kind2, sigma, epsilon, cutoff):
+        self._lib.fmd_pot_lj_apply.argtypes = (ct.c_void_p, ct.c_int, ct.c_int, ct.c_double, ct.c_double, ct.c_double)
+        self._lib.fmd_pot_lj_apply.restype = ct.c_void_p
+        return self._lib.fmd_pot_lj_apply(self._sys_none, atom_kind1, atom_kind2, sigma, epsilon, cutoff)
+
     # Box ----------------------------------------
     @property
     def box_size(self):
