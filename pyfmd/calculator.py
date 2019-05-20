@@ -18,6 +18,7 @@
 """FMD core library wrapper"""
 
 import ctypes as ct
+from ctypes import POINTER, ARRAY
 
 from .error import Error
 
@@ -28,6 +29,8 @@ class Calculator:
     """This base class provides an interface to FMD core library.
     Basically a direct molecular dynamics simulation can be performed via this class."""
 
+    FMD_PHYS_AMU = 1.036426957207970e-04
+
     def __init__(self):
         """Initialize Calculator class by loading library file and creating an instance of system."""
         try:
@@ -35,14 +38,14 @@ class Calculator:
             self._lib_file = str(lib_file)
             self._lib = ct.CDLL(self._lib_file)  # load library file
             self._sys = self._create_system()
-            self._is_potential = False  # check a potential loaded is loaded
+            # self._is_potential = False  # check a potential loaded is loaded
             self._dummy = 0  # dummy variable
         except:
             raise
 
     def __del__(self):
         """Release memory taken by fmd-system instance."""
-        self.free_potential()  # release memory taken by potential
+        # self.free_potential()  # release memory taken by potential
         self.free_system()  # release memory taken by system
 
     # FMD-system instance pointer --------------------
@@ -67,22 +70,6 @@ class Calculator:
             self._lib.fmd_sys_free(self._sys, int(finalize_mpi))
             self._sys = None  # set None flag for fmd-system pointer
 
-    # Potential -----------------------------------------
-    def init_potential(self, file_name):
-        """Load the EAM file into memory."""
-        self._lib.fmd_pot_eam_init.argtypes = (ct.c_void_p, ct.c_char_p)
-        self._lib.fmd_pot_eam_init(self._sys_none, str(file_name).encode('utf-8'))
-        self._is_potential = True  # check a potential is loaded
-        return self
-
-    def free_potential(self):
-        """Release memory taken for potential."""
-        if self._is_potential:
-            self._lib.fmd_pot_eam_free.argtypes = (ct.c_void_p, ct.c_double)
-            self._lib.fmd_pot_eam_free(self._sys_none, self._dummy)
-            self._is_potential = False
-        return self
-
     @property
     def potential_cutoff(self):
         """Get the potential cutoff radius."""
@@ -94,15 +81,27 @@ class Calculator:
         self._lib.fmd_pot_eam_getCutoffRadius.restype = ct.c_double
         return self._lib.fmd_pot_eam_getCutoffRadius(self._sys_none, self._dummy)
 
-    # NEW
-    def set_potential_atom_kinds(self, number, names, masses):
-        self._lib.fmd_pot_setAtomKinds.argtypes = (ct.c_void_p, ct.c_int, ct.c_void_p, ct.c_void_p)
-        self._lib.fmd_pot_setAtomKinds(self._sys_none, number, [str(name).encode('utf-8') for name in names], masses)
+    def set_potential_atom_kinds(self, names, masses):
+        """Set atom names and masses for setting potentials later."""
+
+        assert len(masses) == len(names)
+        number = len(masses)
+
+        self._lib.fmd_pot_setAtomKinds.argtypes = (ct.c_void_p, ct.c_uint, ARRAY(ct.c_char_p, number), ARRAY(ct.c_double, number))
+        char_p_array_type = ct.c_char_p * len(names)
+        c_names = char_p_array_type(*[ct.c_char_p(name.encode("utf-8")) for name in names])
+        print (c_names)
+
+        double_array_type = ct.c_double * len(masses)
+        c_masses = double_array_type(*[float(mass) for mass in masses])
+        print (c_masses)
+
+        self._lib.fmd_pot_setAtomKinds(self._sys_none, number, c_names, c_masses)
         return self
 
-    # NEW
     def apply_potential_lj(self, atom_kind1, atom_kind2, sigma, epsilon, cutoff):
-        self._lib.fmd_pot_lj_apply.argtypes = (ct.c_void_p, ct.c_int, ct.c_int, ct.c_double, ct.c_double, ct.c_double)
+        """Apply Lennard-Jones potential between the two given atom types."""
+        self._lib.fmd_pot_lj_apply.argtypes = (ct.c_void_p, ct.c_uint, ct.c_uint, ct.c_double, ct.c_double, ct.c_double)
         self._lib.fmd_pot_lj_apply.restype = ct.c_void_p
         return self._lib.fmd_pot_lj_apply(self._sys_none, atom_kind1, atom_kind2, sigma, epsilon, cutoff)
 
@@ -141,7 +140,7 @@ class Calculator:
         self._lib.fmd_box_setPBC(self._sys_none, pbc[0], pbc[1], pbc[2])
         return self
 
-    def set_box_grid(self, cutoff):
+    def create_box_grid(self, cutoff):
         """Create box grid."""
         self._lib.fmd_box_createGrid.argtypes = (ct.c_void_p, ct.c_double)
         self._lib.fmd_box_createGrid(self._sys_none, float(cutoff))
