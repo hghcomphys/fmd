@@ -30,7 +30,7 @@ typedef struct fmd_sys_t fmd_sys_t;
 typedef struct fmd_pot_t fmd_pot_t;
 typedef enum
     {scmXYZParticlesNum, scmXYZSeparate, scmCSV, scmVTF} fmd_SaveConfigMode_t;
-typedef char fmd_atomkind_name_t[16];
+//typedef char fmd_atomkind_name_t[16];
 
 // functions
 
@@ -63,7 +63,7 @@ double fmd_pot_eam_getLatticeParameter(fmd_sys_t *system, int element);
 double fmd_pot_eam_getCutoffRadius(fmd_sys_t *system, fmd_pot_t *pot);
 void fmd_pot_eam_free(fmd_sys_t *system);
 void fmd_pot_setCutoffRadius(fmd_sys_t *system, double cutoff);
-void fmd_pot_setAtomKinds(fmd_sys_t *system, unsigned number, fmd_atomkind_name_t *names, double *masses);
+void fmd_pot_setAtomKinds(fmd_sys_t *system, unsigned number, char *names[], double masses[]);
 fmd_pot_t *fmd_pot_lj_apply(fmd_sys_t *system, unsigned atomkind1, unsigned atomkind2,
   double sigma, double epsilon, double cutoff);
 void fmd_pot_apply(fmd_sys_t *system, unsigned atomkind1, unsigned atomkind2, fmd_pot_t *pot);

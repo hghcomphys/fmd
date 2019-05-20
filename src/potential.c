@@ -226,7 +226,7 @@ double fmd_pot_eam_getLatticeParameter(fmd_sys_t *sysp, int element)
     //return eam->elements[element].latticeParameter;
 }
 
-void fmd_pot_setAtomKinds(fmd_sys_t *sysp, unsigned number, fmd_atomkind_name_t *names, double *masses)
+void fmd_pot_setAtomKinds(fmd_sys_t *sysp, unsigned number, char *names[], double masses[])
 {
     sysp->potsys.atomkinds_num = number;
     sysp->potsys.atomkinds = (atomkind_t *)malloc(number * sizeof(atomkind_t));
