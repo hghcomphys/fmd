@@ -1,6 +1,6 @@
 """PyFMD
 
-This example demonstrates an MD simulation of Argon using Lennard-Jones potential.
+This example demonstrates an MD simulation of liquid Argon using Lennard-Jones potential.
 Beforehand, make sure that PyFMD is installed and properly linked to the FMD library file.
 
 How to run:
@@ -31,10 +31,9 @@ if not md.is_process_md:
     sys.exit()
 
 # have only argon atoms
-FMD_PHYS_AMU = 1.036426957207970e-04
 name = ["Ar"]
-mass = [39.948 * FMD_PHYS_AMU]
-md.set_potential_atom_kinds(1, name, mass)
+mass = [39.948 * md.FMD_PHYS_AMU]
+md.set_potential_atom_kinds(name, mass)
 
 # use a 12-6 Lennard-Jones potential for Argon atoms
 sigma = 3.4
@@ -42,8 +41,8 @@ epsilon = 0.0104
 cutoff = 2.5 * sigma
 md.apply_potential_lj(0, 0, sigma, epsilon, cutoff)
 
-# get the EAM potential cutoff radius and define the box grid by using it
-md.set_box_grid(cutoff)
+# create the box grid
+md.create_box_grid(cutoff)
 
 # set the desired temperature (in Kelvin)
 md.desired_temperature = 100.0
@@ -77,14 +76,17 @@ while md.time < final_step:
         md.save_io_config()
 
     # report some quantities every time step
-    # print (md.time, md.temperature, md.total_energy)
+    print (md.time, md.temperature, md.total_energy)
 
     # take first step of velocity Verlet integrator
     md.velocity_verlet_first_step(use_thermostat=True)  # NVT ensemble
+
     # compute forces
     md.update_force()
+
     # take last step of velocity Verlet integrator
     md.velocity_verlet_second_step()
+
     # Or, simply call velocity_verlet method
     # md.update_position_and_velocity()
 
@@ -98,4 +100,4 @@ md.save_io_state("state0.stt")
 print ("The run took about %.3f seconds to finish." % md.process_wall_time)
 
 # release memory taken for potential and fmd-system
-# del md
+del md
