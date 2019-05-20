@@ -90,11 +90,9 @@ class Calculator:
         self._lib.fmd_pot_setAtomKinds.argtypes = (ct.c_void_p, ct.c_uint, ARRAY(ct.c_char_p, number), ARRAY(ct.c_double, number))
         char_p_array_type = ct.c_char_p * len(names)
         c_names = char_p_array_type(*[ct.c_char_p(name.encode("utf-8")) for name in names])
-        print (c_names)
 
         double_array_type = ct.c_double * len(masses)
         c_masses = double_array_type(*[float(mass) for mass in masses])
-        print (c_masses)
 
         self._lib.fmd_pot_setAtomKinds(self._sys_none, number, c_names, c_masses)
         return self
