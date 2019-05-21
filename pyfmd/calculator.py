@@ -38,14 +38,12 @@ class Calculator:
             self._lib_file = str(lib_file)
             self._lib = ct.CDLL(self._lib_file)  # load library file
             self._sys = self._create_system()
-            # self._is_potential = False  # check a potential loaded is loaded
             self._dummy = 0  # dummy variable
         except:
             raise
 
     def __del__(self):
         """Release memory taken by fmd-system instance."""
-        # self.free_potential()  # release memory taken by potential
         self.free_system()  # release memory taken by system
 
     # FMD-system instance pointer --------------------
@@ -70,30 +68,25 @@ class Calculator:
             self._lib.fmd_sys_free(self._sys, int(finalize_mpi))
             self._sys = None  # set None flag for fmd-system pointer
 
-    @property
-    def potential_cutoff(self):
+    def get_potential_cutoff(self, potential):
         """Get the potential cutoff radius."""
-        return self.get_potential_cutoff()
-
-    def get_potential_cutoff(self):
-        """Get the potential cutoff radius."""
-        self._lib.fmd_pot_eam_getCutoffRadius.argtypes = (ct.c_void_p, ct.c_double)
+        self._lib.fmd_pot_eam_getCutoffRadius.argtypes = (ct.c_void_p, ct.c_void_p)
         self._lib.fmd_pot_eam_getCutoffRadius.restype = ct.c_double
-        return self._lib.fmd_pot_eam_getCutoffRadius(self._sys_none, self._dummy)
+        return self._lib.fmd_pot_eam_getCutoffRadius(self._sys_none, potential)
 
     def set_potential_atom_kinds(self, names, masses):
         """Set atom names and masses for setting potentials later."""
-
+        # check input lists
         assert len(masses) == len(names)
-        number = len(masses)
-
-        self._lib.fmd_pot_setAtomKinds.argtypes = (ct.c_void_p, ct.c_uint, ARRAY(ct.c_char_p, number), ARRAY(ct.c_double, number))
+        number = len()
+        # array of names
+        self._lib.fmd_pot_setAtomKinds.argtypes = (ct.c_void_p, ct.c_uint, ARRAY(ct.c_char, number), ARRAY(ct.c_double, number))
         char_p_array_type = ct.c_char_p * len(names)
-        c_names = char_p_array_type(*[ct.c_char_p(name.encode("utf-8")) for name in names])
-
+        c_names = POINTER(char_p_array_type(*[ct.c_char_p(str(name).encode("utf-8")) for name in names]))
+        # array of masses
         double_array_type = ct.c_double * len(masses)
         c_masses = double_array_type(*[float(mass) for mass in masses])
-
+        # call c_function
         self._lib.fmd_pot_setAtomKinds(self._sys_none, number, c_names, c_masses)
         return self
 
@@ -102,6 +95,18 @@ class Calculator:
         self._lib.fmd_pot_lj_apply.argtypes = (ct.c_void_p, ct.c_uint, ct.c_uint, ct.c_double, ct.c_double, ct.c_double)
         self._lib.fmd_pot_lj_apply.restype = ct.c_void_p
         return self._lib.fmd_pot_lj_apply(self._sys_none, atom_kind1, atom_kind2, sigma, epsilon, cutoff)
+
+    def load_potential_eam_alloy(self, filename):
+        """Load the EAM file into memory. It has to be called only after subdomains."""
+        self._lib.fmd_pot_eam_alloy_load.argtypes = (ct.c_void_p, ct.c_char_p)
+        self._lib.fmd_pot_eam_alloy_load.restype = ct.c_void_p
+        return self._lib.fmd_pot_eam_alloy_load(self._sys_none, str(filename).encode("utf-8"))
+
+    def apply_potential(self, atom_kind1, atom_kind2, potential):
+        """Apply the given potential between two atom kinds."""
+        self._lib.fmd_pot_apply.argtypes = (ct.c_void_p, ct.c_uint, ct.c_uint, ct.c_void_p)
+        self._lib.fmd_pot_apply(self._sys_none, atom_kind1, atom_kind2, potential)
+        return self
 
     # Box ----------------------------------------
     @property
