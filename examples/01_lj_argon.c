@@ -42,9 +42,15 @@ int main(int argc, char *argv[])
     fmd_pot_setAtomKinds(sys, 1, name, mass);
 
     // use a 12-6 Lennard-Jones potential for Argon atoms
+    /*
     double sigma = 3.4, epsilon = 0.0104;
     double cutoff = 2.5 * sigma;
     fmd_pot_lj_apply(sys, 0, 0, sigma, epsilon, cutoff);
+    */
+
+    // use a Morse potential for Argon atoms
+    double D0 = 0.010177, alpha = 1.253, r0 = 4.13, cutoff = 8.5;
+    fmd_pot_morse_apply(sys, 0, 0, D0, alpha, r0, cutoff);
 
     // create the box grid
     fmd_box_createGrid(sys, cutoff);
