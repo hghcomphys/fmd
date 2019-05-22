@@ -12,8 +12,13 @@ mass		1 39.948
 
 velocity	all create 100 87287
 
+# LJ 12-6 potential
 pair_style	lj/cut 8.5
 pair_coeff	1 1 0.0104 3.4
+
+# Morse potential
+#pair_style morse 8.5
+#pair_coeff 1 1 0.010177 1.253 4.13
 
 neighbor	    0.3 bin
 neigh_modify	every 1 delay 0 check no
