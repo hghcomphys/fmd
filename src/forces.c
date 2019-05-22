@@ -366,6 +366,91 @@ static void computeLJ(fmd_sys_t *sysp)
     MPI_Allreduce(&potEnergy, &sysp->totalPotentialEnergy, 1, MPI_DOUBLE, MPI_SUM, sysp->MD_comm);
 }
 
+static void computeMorse(fmd_sys_t *sysp)
+{
+    int jc[3], kc[3];
+    int d;
+    TParticleListItem *item1_p, *item2_p;
+    double r2, rv[3];
+    int ic0, ic1, ic2;
+    double potEnergy = 0.0;
+    double F[3];
+    potpair_t **pottable = sysp->potsys.pottable;
+
+    // iterate over all cells(lists)
+#pragma omp parallel for private(ic0,ic1,ic2,item1_p,d,kc,jc,item2_p,rv,r2,F) \
+      shared(sysp,pottable) default(none) collapse(3) reduction(+:potEnergy) schedule(static,1)
+    for (ic0 = sysp->subDomain.ic_start[0]; ic0 < sysp->subDomain.ic_stop[0]; ic0++)
+        for (ic1 = sysp->subDomain.ic_start[1]; ic1 < sysp->subDomain.ic_stop[1]; ic1++)
+            for (ic2 = sysp->subDomain.ic_start[2]; ic2 < sysp->subDomain.ic_stop[2]; ic2++)
+            {
+                // iterate over all items in cell ic
+                for (item1_p = sysp->subDomain.grid[ic0][ic1][ic2]; item1_p != NULL; item1_p = item1_p->next_p)
+                {
+                    if (!(sysp->activeGroup == -1 || item1_p->P.groupID == sysp->activeGroup))
+                        continue;
+
+                    unsigned atomkind1 = item1_p->P.elementID;
+
+                    for (d=0; d<3; d++)
+                        F[d] = 0.0;
+
+                    // iterate over neighbor cells of cell ic
+                    for (kc[0]=ic0-1; kc[0]<=ic0+1; kc[0]++)
+                    {
+                        SET_jc_IN_DIRECTION(0)
+                        for (kc[1]=ic1-1; kc[1]<=ic1+1; kc[1]++)
+                        {
+                            SET_jc_IN_DIRECTION(1)
+                            for (kc[2]=ic2-1; kc[2]<=ic2+1; kc[2]++)
+                            {
+                                SET_jc_IN_DIRECTION(2)
+                                // iterate over all items in cell jc
+                                for (item2_p = sysp->subDomain.grid[jc[0]][jc[1]][jc[2]]; item2_p != NULL; item2_p = item2_p->next_p)
+                                {
+                                    if (!(sysp->activeGroup == -1 || item2_p->P.groupID == sysp->activeGroup))
+                                        continue;
+
+                                    if (item1_p != item2_p)
+                                    {
+                                        COMPUTE_r2;
+
+                                        unsigned atomkind2 = item2_p->P.elementID;
+                                        morse_t *morse = (morse_t *)pottable[atomkind1][atomkind2].data;
+
+                                        if (r2 < morse->cutoff_sqr)
+                                        {
+                                            // force, F = -(d/dr)U
+                                            double r = sqrt(r2);
+                                            double inv_r = 1.0/r;
+                                            double exp1 = exp( -morse->alpha * (r - morse->r0) );
+                                            double exp2 = SQR(exp1);
+
+                                            for (d=0; d<3; d++)
+                                                F[d] +=  2.0 * morse->alpha * morse->D0 * rv[d] * inv_r * (exp2 - exp1);
+
+                                            // potential energy, U = D0 * ( exp(-2*alpha*(r-r0)) - 2*exp(-alpha*(r-r0)) )
+                                            potEnergy += morse->D0 * (exp2 - 2.0 * exp1);
+
+                                            // pressure
+                                            /*for (d=0; d<3; d++) {
+                                                pressure += -F[d]*rv[d]
+                                            }*/
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    for (d=0; d<3; d++)
+                        item1_p->F[d] = F[d];
+                }
+            }
+
+    potEnergy *= 0.5;  /*correct double-counting*/
+    MPI_Allreduce(&potEnergy, &sysp->totalPotentialEnergy, 1, MPI_DOUBLE, MPI_SUM, sysp->MD_comm);
+}
+
 void fmd_dync_updateForces(fmd_sys_t *sysp)
 {
     if (sysp->potsys.potkinds == NULL)  // just for one time
@@ -381,6 +466,9 @@ void fmd_dync_updateForces(fmd_sys_t *sysp)
         {
             case POTKIND_LJ_6_12:
                 computeLJ(sysp);
+                break;
+            case POTKIND_MORSE:
+                computeMorse(sysp);
                 break;
             case POTKIND_EAM_ALLOY:
                 if (sysp->iCompLocOrdParam) compLocOrdParam(sysp);

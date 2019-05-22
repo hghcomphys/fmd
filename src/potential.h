@@ -50,11 +50,20 @@ typedef struct
     double cutoff_sqr;
 } LJ_6_12_t;
 
+typedef struct
+{
+    double D0;
+    double alpha;
+    double r0;
+    double cutoff_sqr;
+} morse_t;
+
 typedef enum
 {
     POTKIND_NONE,
     POTKIND_LJ_6_12,
-    POTKIND_EAM_ALLOY
+    POTKIND_EAM_ALLOY,
+    POTKIND_MORSE
 } potkind_t;
 
 typedef struct

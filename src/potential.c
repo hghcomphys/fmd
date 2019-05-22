@@ -351,6 +351,28 @@ fmd_pot_t *fmd_pot_lj_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomki
     return pot;
 }
 
+fmd_pot_t *fmd_pot_morse_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomkind2,
+                            double D0, double alpha, double r0, double cutoff)
+{
+    morse_t *morse = (morse_t *)malloc(sizeof(morse_t));
+    morse->D0 = D0;
+    morse->alpha = alpha;
+    morse->r0 = r0;
+    morse->cutoff_sqr = SQR(cutoff);
+
+    fmd_pot_t *pot = (fmd_pot_t *)malloc(sizeof(fmd_pot_t));
+    pot->kind = POTKIND_MORSE;
+    pot->data = morse;
+
+    // add the pot to potlist
+    sysp->potsys.potlist = fmd_list_prepend(sysp->potsys.potlist, pot);
+
+    // apply the pot
+    fmd_pot_apply(sysp, atomkind1, atomkind2, pot);
+
+    return pot;
+}
+
 static int potkind_compare(const void *a, const void *b)
 {
     if ( *( (potkind_t *)a ) == *( (potkind_t *)b ) )

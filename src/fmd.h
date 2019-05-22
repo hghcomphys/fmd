@@ -66,6 +66,8 @@ void fmd_pot_setCutoffRadius(fmd_sys_t *system, double cutoff);
 void fmd_pot_setAtomKinds(fmd_sys_t *system, unsigned number, fmd_atomkind_name_t *names, double *masses);
 fmd_pot_t *fmd_pot_lj_apply(fmd_sys_t *system, unsigned atomkind1, unsigned atomkind2,
   double sigma, double epsilon, double cutoff);
+fmd_pot_t *fmd_pot_morse_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomkind2,
+                              double D0, double alpha, double r0, double cutoff);
 void fmd_pot_apply(fmd_sys_t *system, unsigned atomkind1, unsigned atomkind2, fmd_pot_t *pot);
 
 
