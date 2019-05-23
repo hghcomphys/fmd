@@ -20,7 +20,7 @@
 #ifndef FORCES_H
 #define FORCES_H
 
-#define COMPUTE_rv_and_r2                                                    \
+#define COMPUTE_rv_AND_r2                                                    \
     for (d=0; d<3; d++)                                                      \
     {                                                                        \
         if (sysp->ns[d] == 1)                                                \
