@@ -72,7 +72,7 @@ static void computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
 
                             if (item1_p != item2_p)
                             {
-                                COMPUTE_r2;
+                                COMPUTE_rv_and_r2;
 
                                 atomkind2 = item2_p->P.elementID;
                                 eam = (eam_t *)pottable[atomkind1][atomkind2].data;
@@ -200,7 +200,7 @@ static void computeEAM_pass2(fmd_sys_t *sysp, double FembSum)
                                 continue;
                             if (item1_p != item2_p)
                             {
-                                COMPUTE_r2;
+                                COMPUTE_rv_and_r2;
 
                                 atomkind2 = item2_p->P.elementID;
                                 eam = (eam_t *)pottable[atomkind1][atomkind2].data;
@@ -325,7 +325,7 @@ static void computeLJ(fmd_sys_t *sysp)
 
                                     if (item1_p != item2_p)
                                     {
-                                        COMPUTE_r2;
+                                        COMPUTE_rv_and_r2;
 
                                         unsigned atomkind2 = item2_p->P.elementID;
                                         LJ_6_12_t *lj = (LJ_6_12_t *)pottable[atomkind1][atomkind2].data;
@@ -413,7 +413,7 @@ static void computeMorse(fmd_sys_t *sysp)
 
                                     if (item1_p != item2_p)
                                     {
-                                        COMPUTE_r2;
+                                        COMPUTE_rv_and_r2;
 
                                         unsigned atomkind2 = item2_p->P.elementID;
                                         morse_t *morse = (morse_t *)pottable[atomkind1][atomkind2].data;
