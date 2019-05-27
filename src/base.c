@@ -780,6 +780,7 @@ void fmd_io_loadState(fmd_sys_t *sysp, char *file, int useTime)
                     item_p->P.elementID = j;
                     break;
                 }
+            // TO-DO: what if the name doesn't exist in potsys?
             fscanf(fp, "%lf%lf%lf", &item_p->P.x[0], &item_p->P.x[1], &item_p->P.x[2]);
             fscanf(fp, "%lf%lf%lf", &item_p->P.v[0], &item_p->P.v[1], &item_p->P.v[2]);
             for (d=0; d<3; d++)
