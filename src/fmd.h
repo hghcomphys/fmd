@@ -20,10 +20,6 @@
 #ifndef FMD_H
 #define FMD_H
 
-// symbolic constants
-
-#define FMD_PHYS_AMU            1.036426957207970e-04       // atomic mass unit
-
 // types
 
 typedef struct fmd_sys_t fmd_sys_t;
@@ -69,7 +65,6 @@ fmd_pot_t *fmd_pot_lj_apply(fmd_sys_t *system, unsigned atomkind1, unsigned atom
 fmd_pot_t *fmd_pot_morse_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomkind2,
                               double D0, double alpha, double r0, double cutoff);
 void fmd_pot_apply(fmd_sys_t *system, unsigned atomkind1, unsigned atomkind2, fmd_pot_t *pot);
-
 
 void fmd_subd_init(fmd_sys_t *system);
 void fmd_subd_free(fmd_sys_t *system);

@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 
     // let's have only copper atoms
     fmd_string_t name[1] = {"Cu"};
-    double mass[1] = {63.546 * FMD_PHYS_AMU};
+    double mass[1] = {63.546};
     fmd_pot_setAtomKinds(sys, 1, name, mass);
 
     // load the EAM file into memory; can be called only after fmd_box_setSubDomains()

@@ -244,7 +244,7 @@ void fmd_pot_setAtomKinds(fmd_sys_t *sysp, unsigned number, const fmd_string_t n
     sysp->potsys.atomkinds = (atomkind_t *)malloc(number * sizeof(atomkind_t));
     for (unsigned i=0; i<number; i++)
     {
-        sysp->potsys.atomkinds[i].mass = masses[i];
+        sysp->potsys.atomkinds[i].mass = masses[i] / MD_MASS_UNIT;  // convert from amu to internal mass unit
         size_t len = strlen(names[i]);
         sysp->potsys.atomkinds[i].name = (char *)malloc(len + 1);
         strcpy(sysp->potsys.atomkinds[i].name, names[i]);
@@ -366,7 +366,7 @@ fmd_pot_t *fmd_pot_lj_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomki
 }
 
 fmd_pot_t *fmd_pot_morse_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomkind2,
-                            double D0, double alpha, double r0, double cutoff)
+                               double D0, double alpha, double r0, double cutoff)
 {
     morse_t *morse = (morse_t *)malloc(sizeof(morse_t));
     morse->D0 = D0;

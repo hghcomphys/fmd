@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 
     // let's have only argon atoms
     fmd_string_t name[1] = {"Ar"};
-    double mass[1] = {39.948 * FMD_PHYS_AMU};
+    double mass[1] = {39.948};
     fmd_pot_setAtomKinds(sys, 1, name, mass);
 
     // use a 12-6 Lennard-Jones potential for Argon atoms
