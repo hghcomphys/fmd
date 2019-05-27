@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     }
 
     // let's have only copper atoms
-    fmd_atomkind_name_t name[1] = {"Cu"};
+    fmd_string_t name[1] = {"Cu"};
     double mass[1] = {63.546 * FMD_PHYS_AMU};
     fmd_pot_setAtomKinds(sys, 1, name, mass);
 

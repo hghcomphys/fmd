@@ -30,7 +30,7 @@ typedef struct fmd_sys_t fmd_sys_t;
 typedef struct fmd_pot_t fmd_pot_t;
 typedef enum
     {scmXYZParticlesNum, scmXYZSeparate, scmCSV, scmVTF} fmd_SaveConfigMode_t;
-typedef char fmd_atomkind_name_t[16];
+typedef char *fmd_string_t;
 
 // functions
 
@@ -55,7 +55,7 @@ void fmd_box_createGrid(fmd_sys_t *system, double cutoff);
 void fmd_io_setSaveDirectory(fmd_sys_t *system, char *directory);
 void fmd_io_setSaveConfigMode(fmd_sys_t *system, fmd_SaveConfigMode_t mode);
 void fmd_io_printf(fmd_sys_t *system, const char * restrict format, ...);
-void fmd_io_loadState(fmd_sys_t *system, char *file, int useTime);
+void fmd_io_loadState(fmd_sys_t *system, char *filepath, int useTime);
 void fmd_io_saveState(fmd_sys_t *system, char *filename);
 
 fmd_pot_t *fmd_pot_eam_alloy_load(fmd_sys_t *system, char *filePath);
@@ -63,7 +63,7 @@ double fmd_pot_eam_getLatticeParameter(fmd_sys_t *system, int element);
 double fmd_pot_eam_getCutoffRadius(fmd_sys_t *system, fmd_pot_t *pot);
 void fmd_pot_eam_free(fmd_sys_t *system);
 void fmd_pot_setCutoffRadius(fmd_sys_t *system, double cutoff);
-void fmd_pot_setAtomKinds(fmd_sys_t *system, unsigned number, fmd_atomkind_name_t *names, double *masses);
+void fmd_pot_setAtomKinds(fmd_sys_t *system, unsigned number, const fmd_string_t names[], const double masses[]);
 fmd_pot_t *fmd_pot_lj_apply(fmd_sys_t *system, unsigned atomkind1, unsigned atomkind2,
   double sigma, double epsilon, double cutoff);
 fmd_pot_t *fmd_pot_morse_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomkind2,

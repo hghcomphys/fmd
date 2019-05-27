@@ -20,7 +20,7 @@
 #ifndef POTENTIAL_H
 #define POTENTIAL_H
 
-typedef char fmd_atomkind_name_t[16];
+typedef char *fmd_string_t;
 
 typedef struct
 {
@@ -32,7 +32,7 @@ typedef struct
     double *rhoDD;
     double **phi;
     double **phiDD;
-    fmd_atomkind_name_t name;
+    fmd_string_t name;
 } eam_element_t;
 
 typedef struct
@@ -87,7 +87,7 @@ typedef struct
 typedef struct
 {
     double mass;
-    fmd_atomkind_name_t name;
+    fmd_string_t name;
     atomkind_aux_t *aux;
 } atomkind_t;
 

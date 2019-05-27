@@ -91,7 +91,11 @@ static eam_t *load_DYNAMOsetfl(fmd_sys_t *sysp, char *filePath)
         fscanf(fp, "%d", &eam->elementsNo);
         eam->elements = (eam_element_t *)malloc(eam->elementsNo * sizeof(eam_element_t));
         for (i=0; i < eam->elementsNo; i++)
-            fscanf(fp, "%s", eam->elements[i].name);
+            if (fscanf(fp, "%s", str) == 1)
+            {
+                eam->elements[i].name = (char *)malloc(strlen(str) + 1);
+                strcpy(eam->elements[i].name, str);
+            }
 
         double cutoff;
         fscanf(fp, "%d%lf%d%lf%lf", &eam->Nrho, &eam->drho, &eam->Nr, &eam->dr, &cutoff);
@@ -182,7 +186,15 @@ static eam_t *load_DYNAMOsetfl(fmd_sys_t *sysp, char *filePath)
     {
         MPI_Bcast(&eam->elements[i].mass, 1, MPI_DOUBLE, MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
         MPI_Bcast(&eam->elements[i].latticeParameter, 1, MPI_DOUBLE, MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
-        MPI_Bcast(eam->elements[i].name, 3, MPI_CHAR, MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
+
+        unsigned namelen;
+        if (sysp->subDomain.myrank == MAINPROCESS(sysp->subDomain.numprocs))
+            namelen = strlen(eam->elements[i].name);
+        MPI_Bcast(&namelen, 1, MPI_UNSIGNED, MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
+        if (sysp->subDomain.myrank != MAINPROCESS(sysp->subDomain.numprocs))
+            eam->elements[i].name = (char *)malloc(namelen + 1);
+        MPI_Bcast(eam->elements[i].name, namelen+1, MPI_CHAR, MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
+
         MPI_Bcast(eam->elements[i].F, eam->Nrho, MPI_DOUBLE, MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
         MPI_Bcast(eam->elements[i].rho, eam->Nr2, MPI_DOUBLE, MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
         for (j=0; j<=i; j++)
@@ -226,13 +238,15 @@ double fmd_pot_eam_getLatticeParameter(fmd_sys_t *sysp, int element)
     //return eam->elements[element].latticeParameter;
 }
 
-void fmd_pot_setAtomKinds(fmd_sys_t *sysp, unsigned number, fmd_atomkind_name_t *names, double *masses)
+void fmd_pot_setAtomKinds(fmd_sys_t *sysp, unsigned number, const fmd_string_t names[], const double masses[])
 {
     sysp->potsys.atomkinds_num = number;
     sysp->potsys.atomkinds = (atomkind_t *)malloc(number * sizeof(atomkind_t));
-    for (int i=0; i<number; i++)
+    for (unsigned i=0; i<number; i++)
     {
         sysp->potsys.atomkinds[i].mass = masses[i];
+        size_t len = strlen(names[i]);
+        sysp->potsys.atomkinds[i].name = (char *)malloc(len + 1);
         strcpy(sysp->potsys.atomkinds[i].name, names[i]);
         sysp->potsys.atomkinds[i].aux = (atomkind_aux_t *)malloc(sizeof(atomkind_aux_t));
     }
