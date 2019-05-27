@@ -29,8 +29,6 @@ class Calculator:
     """This base class provides an interface to FMD core library.
     Basically a direct molecular dynamics simulation can be performed via this class."""
 
-    FMD_PHYS_AMU = 1.036426957207970e-04
-
     def __init__(self):
         """Initialize Calculator class by loading library file and creating an instance of system."""
         try:
@@ -77,12 +75,12 @@ class Calculator:
     def set_potential_atom_kinds(self, names, masses):
         """Set atom names and masses for setting potentials later."""
         # check input lists
-        assert len(masses) == len(names)
-        number = len()
+        assert len(masses) == len(names), "Expected same length for the names and masses lists!"
+        number = len(masses)
         # array of names
-        self._lib.fmd_pot_setAtomKinds.argtypes = (ct.c_void_p, ct.c_uint, ARRAY(ct.c_char, number), ARRAY(ct.c_double, number))
+        self._lib.fmd_pot_setAtomKinds.argtypes = (ct.c_void_p, ct.c_uint, ARRAY(ct.c_char_p, number), ARRAY(ct.c_double, number))
         char_p_array_type = ct.c_char_p * len(names)
-        c_names = POINTER(char_p_array_type(*[ct.c_char_p(str(name).encode("utf-8")) for name in names]))
+        c_names = char_p_array_type(*[ct.c_char_p(str(name).encode("utf-8")) for name in names])
         # array of masses
         double_array_type = ct.c_double * len(masses)
         c_masses = double_array_type(*[float(mass) for mass in masses])
