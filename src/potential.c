@@ -1,7 +1,7 @@
 /*
   potential.c: This file is part of Free Molecular Dynamics
 
-  Copyright (C) 2019 Arham Amouye Foumani, Hossein Ghorbanfekr Kalashami
+  Copyright (C) 2019 Arham Amouye Foumani, Hossein Ghorbanfekr
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -267,6 +267,7 @@ static void potlist_free(fmd_sys_t *sysp)
             case POTKIND_EAM_ALLOY:
                 pot_eam_free((eam_t *)(pot->data));
                 break;
+
             default:
                 free(pot->data);
         }
@@ -308,7 +309,7 @@ void fmd_potsys_free(fmd_sys_t *sysp)
     }
 }
 
-void fmd_pot_init(fmd_sys_t *sysp)
+void fmd_potsys_init(fmd_sys_t *sysp)
 {
     sysp->potsys.atomkinds = NULL;
     sysp->potsys.potlist = NULL;
@@ -462,9 +463,11 @@ void fmd_pot_hybridpasses_update(fmd_sys_t *sysp)
             case POTKIND_MORSE:
                 sysp->potsys.hybridpasses[0] = 1;
                 break;
+
             case POTKIND_LJ_6_12:
                 sysp->potsys.hybridpasses[0] = 1;
                 break;
+
             case POTKIND_EAM_ALLOY:
                 sysp->potsys.hybridpasses[0] = 1;
                 sysp->potsys.hybridpasses[1] = 1;

@@ -5,7 +5,7 @@ Beforehand, make sure that PyFMD is installed and properly linked to the FMD lib
 
 How to run:
 
-    $ mpirun -n 2 python 01_lj_argon.py
+    $ mpirun -n 2 python 01_argon.py
 """
 
 import sys

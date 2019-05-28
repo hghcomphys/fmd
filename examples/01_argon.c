@@ -1,11 +1,11 @@
 /* Assuming that FMD is already compiled in the src directory, this example
    can be compiled with the following command:
 
-   $ gcc 01_lj_argon.c -L../src/ -Wl,-R../src/ -lfmd -lm -O3 -o 01_lj_argon.x
+   $ gcc 01_argon.c -L../src/ -Wl,-R../src/ -lfmd -lm -O3 -o 01_argon.x
 
    and can be executed by
 
-   $ mpirun -n 2 ./01_lj_argon.x
+   $ mpirun -n 2 ./01_argon.x
 */
 
 #include <math.h>

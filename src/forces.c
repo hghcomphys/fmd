@@ -1,7 +1,7 @@
 /*
   forces.c: This file is part of Free Molecular Dynamics
 
-  Copyright (C) 2019 Arham Amouye Foumani, Hossein Ghorbanfekr Kalashami
+  Copyright (C) 2019 Arham Amouye Foumani, Hossein Ghorbanfekr
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -581,9 +581,11 @@ void fmd_dync_updateForces(fmd_sys_t *sysp)
             case POTKIND_LJ_6_12:
                 computeLJ(sysp);
                 break;
+
             case POTKIND_MORSE:
                 computeMorse(sysp);
                 break;
+
             case POTKIND_EAM_ALLOY:
                 if (sysp->iCompLocOrdParam) compLocOrdParam(sysp);
                 double FembSum;
