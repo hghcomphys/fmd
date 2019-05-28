@@ -23,6 +23,115 @@
 #include "md_ghost.h"
 #include "list.h"
 
+static void compute_hybrid_pass1(fmd_sys_t *sysp, double *FembSum_p)
+{
+    int jc[3], kc[3];
+    int d, ir2, irho, ir2_h, irho_h;
+    TParticleListItem *item1_p, *item2_p;
+    double r2, rv[3];
+    double *rho, *rhoDD, *F, *F_DD;
+    double a, b, h;
+    int ic0, ic1, ic2;
+    double Femb_sum=0.0;
+    potpair_t **pottable = sysp->potsys.pottable;
+
+    // iterate over all cells(lists)
+    #pragma omp parallel for private(ic0,ic1,ic2,item1_p,kc,jc,item2_p,d,rv,r2,h,ir2,ir2_h,a,b,rho, \
+      rhoDD,F,F_DD,irho,irho_h) shared(sysp,pottable) default(none) collapse(3) reduction(+:Femb_sum) \
+      schedule(static,1)
+    for (ic0 = sysp->subDomain.ic_start[0]; ic0 < sysp->subDomain.ic_stop[0]; ic0++)
+    for (ic1 = sysp->subDomain.ic_start[1]; ic1 < sysp->subDomain.ic_stop[1]; ic1++)
+    for (ic2 = sysp->subDomain.ic_start[2]; ic2 < sysp->subDomain.ic_stop[2]; ic2++)
+    {
+        // iterate over all items in cell ic
+        for (item1_p = sysp->subDomain.grid[ic0][ic1][ic2]; item1_p != NULL; item1_p = item1_p->next_p)
+        {
+            if (!(sysp->activeGroup == -1 || item1_p->P.groupID == sysp->activeGroup))
+                continue;
+
+            eam_t *eam;
+            unsigned atomkind1, atomkind2;
+            atomkind1 = item1_p->P.elementID;
+
+            double rho_host = 0.0;
+            // iterate over neighbor cells of cell ic
+            for (kc[0]=ic0-1; kc[0]<=ic0+1; kc[0]++)
+            {
+                SET_jc_IN_DIRECTION(0)
+                for (kc[1]=ic1-1; kc[1]<=ic1+1; kc[1]++)
+                {
+                    SET_jc_IN_DIRECTION(1)
+                    for (kc[2]=ic2-1; kc[2]<=ic2+1; kc[2]++)
+                    {
+                        SET_jc_IN_DIRECTION(2)
+                        // iterate over all items in cell jc
+                        for (item2_p = sysp->subDomain.grid[jc[0]][jc[1]][jc[2]]; item2_p != NULL; item2_p = item2_p->next_p)
+                        {
+                            if (!(sysp->activeGroup == -1 || item2_p->P.groupID == sysp->activeGroup))
+                                continue;
+
+                            if (item1_p != item2_p)
+                            {
+                                atomkind2 = item2_p->P.elementID;
+                                if (pottable[atomkind1][atomkind2].kind == POTKIND_EAM_ALLOY)
+                                {
+                                    COMPUTE_rv_AND_r2;
+
+                                    eam = (eam_t *)pottable[atomkind1][atomkind2].data;
+
+                                    if (r2 < eam->cutoff_sqr)
+                                    {
+                                        h = eam->dr2;
+                                        ir2 = (int)(r2 / h);
+                                        ir2_h = ir2 + 1;
+                                        a = ir2_h - r2/h;
+                                        b=1-a;
+
+                                        unsigned jloc = pottable[atomkind1][atomkind2].jloc;
+                                        rho = eam->elements[jloc].rho;
+#ifdef USE_CSPLINE
+                                        rhoDD = eam->elements[jloc].rhoDD;
+                                        rho_host += SPLINE_VAL(a,b,rho,ir2,ir2_h,rhoDD,h);
+#else
+                                        rho_host += rho[ir2]*a + rho[ir2_h]*b;
+#endif
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (rho_host == 0.0)
+            {   // the first atom didn't see any other atom within its cutoff sphere
+                Femb_sum += sysp->potsys.atomkinds[atomkind1].aux->eam_F0;
+            }
+            else
+            {
+                h = eam->drho;
+                irho = (int)(rho_host / h);
+                assert(irho < eam->Nrho - 1);
+                irho_h = irho + 1;
+
+                unsigned iloc = pottable[atomkind1][atomkind2].iloc;
+                F = eam->elements[iloc].F;
+#ifdef USE_CSPLINE
+                F_DD = eam->elements[iloc].F_DD;
+                a = irho_h - rho_host/h;
+                b = 1-a;
+                item1_p->FembPrime = SPLINE_DERIV(a,b,F,irho,irho_h,F_DD,h);
+                Femb_sum += SPLINE_VAL(a,b,F,irho,irho_h,F_DD,h);
+#else
+                item1_p->FembPrime = (F[irho_h] - F[irho]) / h;
+                Femb_sum += F[irho] + (rho_host - irho * h) * item1_p->FembPrime;
+#endif
+            }
+        }
+    }
+    *FembSum_p=Femb_sum;
+}
+
 static void computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
 {
     int jc[3], kc[3];
@@ -450,6 +559,7 @@ static void computeMorse(fmd_sys_t *sysp)
     potEnergy *= 0.5;  /*correct double-counting*/
     MPI_Allreduce(&potEnergy, &sysp->totalPotentialEnergy, 1, MPI_DOUBLE, MPI_SUM, sysp->MD_comm);
 }
+
 
 void fmd_dync_updateForces(fmd_sys_t *sysp)
 {
