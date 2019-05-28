@@ -101,6 +101,7 @@ typedef struct
     list_t *potkinds;           // list of pot kinds that are present in pottable
     unsigned potkinds_num;
     list_t *potlist;            // list of all pots, whether applied or not
+    int hybridpasses[2];
 } potsys_t;
 
 typedef struct fmd_sys_t fmd_sys_t;
@@ -108,5 +109,6 @@ typedef struct fmd_sys_t fmd_sys_t;
 void fmd_pot_free(fmd_sys_t *sysp);
 void fmd_pot_init(fmd_sys_t *sysp);
 void fmd_pot_potkinds_update(fmd_sys_t *sysp);
+void fmd_pot_hybridpasses_update(fmd_sys_t *sysp);
 
 #endif /* POTENTIAL_H */

@@ -454,7 +454,10 @@ static void computeMorse(fmd_sys_t *sysp)
 void fmd_dync_updateForces(fmd_sys_t *sysp)
 {
     if (sysp->potsys.potkinds == NULL)  // just for one time
+    {
         fmd_pot_potkinds_update(sysp);
+        fmd_pot_hybridpasses_update(sysp);
+    }
 
     fmd_ghostparticles_init(sysp);
 

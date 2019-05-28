@@ -240,6 +240,9 @@ double fmd_pot_eam_getLatticeParameter(fmd_sys_t *sysp, int element)
 
 void fmd_pot_setAtomKinds(fmd_sys_t *sysp, unsigned number, const fmd_string_t names[], const double masses[])
 {
+    // TO-DO: error should be handled here
+    assert(number > 0);
+
     sysp->potsys.atomkinds_num = number;
     sysp->potsys.atomkinds = (atomkind_t *)malloc(number * sizeof(atomkind_t));
     for (unsigned i=0; i<number; i++)
@@ -418,4 +421,30 @@ void fmd_pot_potkinds_update(fmd_sys_t *sysp)
                 sysp->potsys.potkinds = fmd_list_prepend(sysp->potsys.potkinds, &potpair->kind);
             }
         }
+}
+
+// must be called only after a call to fmd_pot_potkinds_update()
+void fmd_pot_hybridpasses_update(fmd_sys_t *sysp)
+{
+    // fill hybridpasses with zeros
+    memset(sysp->potsys.hybridpasses, 0, sizeof(sysp->potsys.hybridpasses));
+
+    list_t *potkinds = sysp->potsys.potkinds;
+    while (potkinds != NULL)
+    {
+        switch (*(potkind_t *)(potkinds->data))
+        {
+            case POTKIND_MORSE:
+                sysp->potsys.hybridpasses[0] = 1;
+                break;
+            case POTKIND_LJ_6_12:
+                sysp->potsys.hybridpasses[0] = 1;
+                break;
+            case POTKIND_EAM_ALLOY:
+                sysp->potsys.hybridpasses[0] = 1;
+                sysp->potsys.hybridpasses[1] = 1;
+                break;
+        }
+        potkinds = potkinds->next;
+    }
 }
