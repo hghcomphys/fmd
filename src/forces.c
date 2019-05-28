@@ -23,6 +23,49 @@
 #include "md_ghost.h"
 #include "list.h"
 
+#ifdef USE_CSPLINE
+#define UPDATE_EAM_PAIR_RHOHOST                                        \
+    {                                                                  \
+        COMPUTE_rv_AND_r2;                                             \
+                                                                       \
+        eam = (eam_t *)pottable[atomkind1][atomkind2].data;            \
+                                                                       \
+        if (r2 < eam->cutoff_sqr)                                      \
+        {                                                              \
+            h = eam->dr2;                                              \
+            ir2 = (int)(r2 / h);                                       \
+            ir2_h = ir2 + 1;                                           \
+            a = ir2_h - r2/h;                                          \
+            b=1-a;                                                     \
+                                                                       \
+            unsigned jloc = pottable[atomkind1][atomkind2].jloc;       \
+            rho = eam->elements[jloc].rho;                             \
+            rhoDD = eam->elements[jloc].rhoDD;                         \
+            rho_host += SPLINE_VAL(a,b,rho,ir2,ir2_h,rhoDD,h);         \
+        }                                                              \
+    }
+#else
+#define UPDATE_EAM_PAIR_RHOHOST                                        \
+    {                                                                  \
+        COMPUTE_rv_AND_r2;                                             \
+                                                                       \
+        eam = (eam_t *)pottable[atomkind1][atomkind2].data;            \
+                                                                       \
+        if (r2 < eam->cutoff_sqr)                                      \
+        {                                                              \
+            h = eam->dr2;                                              \
+            ir2 = (int)(r2 / h);                                       \
+            ir2_h = ir2 + 1;                                           \
+            a = ir2_h - r2/h;                                          \
+            b=1-a;                                                     \
+                                                                       \
+            unsigned jloc = pottable[atomkind1][atomkind2].jloc;       \
+            rho = eam->elements[jloc].rho;                             \
+            rho_host += rho[ir2]*a + rho[ir2_h]*b;                     \
+        }                                                              \
+    }
+#endif
+
 static void compute_hybrid_pass1(fmd_sys_t *sysp, double *FembSum_p)
 {
     int jc[3], kc[3];
@@ -74,29 +117,7 @@ static void compute_hybrid_pass1(fmd_sys_t *sysp, double *FembSum_p)
                             {
                                 atomkind2 = item2_p->P.elementID;
                                 if (pottable[atomkind1][atomkind2].kind == POTKIND_EAM_ALLOY)
-                                {
-                                    COMPUTE_rv_AND_r2;
-
-                                    eam = (eam_t *)pottable[atomkind1][atomkind2].data;
-
-                                    if (r2 < eam->cutoff_sqr)
-                                    {
-                                        h = eam->dr2;
-                                        ir2 = (int)(r2 / h);
-                                        ir2_h = ir2 + 1;
-                                        a = ir2_h - r2/h;
-                                        b=1-a;
-
-                                        unsigned jloc = pottable[atomkind1][atomkind2].jloc;
-                                        rho = eam->elements[jloc].rho;
-#ifdef USE_CSPLINE
-                                        rhoDD = eam->elements[jloc].rhoDD;
-                                        rho_host += SPLINE_VAL(a,b,rho,ir2,ir2_h,rhoDD,h);
-#else
-                                        rho_host += rho[ir2]*a + rho[ir2_h]*b;
-#endif
-                                    }
-                                }
+                                    UPDATE_EAM_PAIR_RHOHOST;
                             }
                         }
                     }
@@ -181,28 +202,8 @@ static void computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
 
                             if (item1_p != item2_p)
                             {
-                                COMPUTE_rv_AND_r2;
-
                                 atomkind2 = item2_p->P.elementID;
-                                eam = (eam_t *)pottable[atomkind1][atomkind2].data;
-
-                                if (r2 < eam->cutoff_sqr)
-                                {
-                                    h = eam->dr2;
-                                    ir2 = (int)(r2 / h);
-                                    ir2_h = ir2 + 1;
-                                    a = ir2_h - r2/h;
-                                    b=1-a;
-
-                                    unsigned jloc = pottable[atomkind1][atomkind2].jloc;
-                                    rho = eam->elements[jloc].rho;
-#ifdef USE_CSPLINE
-                                    rhoDD = eam->elements[jloc].rhoDD;
-                                    rho_host += SPLINE_VAL(a,b,rho,ir2,ir2_h,rhoDD,h);
-#else
-                                    rho_host += rho[ir2]*a + rho[ir2_h]*b;
-#endif
-                                }
+                                UPDATE_EAM_PAIR_RHOHOST;
                             }
                         }
                     }
