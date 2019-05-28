@@ -31,7 +31,7 @@ void fmd_pot_setCutoffRadius(fmd_sys_t *sysp, double cutoff)
     sysp->cutoffRadius = cutoff;
 }
 
-void pot_eam_free(eam_t *eam)
+static void pot_eam_free(eam_t *eam)
 {
     int i, j;
 
@@ -51,6 +51,7 @@ void pot_eam_free(eam_t *eam)
 #endif
     }
     free(eam->elements);
+    free(eam);
 }
 
 static void EAM_convert_r_to_r2(eam_t *eam, double *source, double *dest)
@@ -266,9 +267,10 @@ static void potlist_free(fmd_sys_t *sysp)
             case POTKIND_EAM_ALLOY:
                 pot_eam_free((eam_t *)(pot->data));
                 break;
+            default:
+                free(pot->data);
         }
 
-        free(pot->data);
         potlist = potlist->next;
     }
 
