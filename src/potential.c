@@ -31,9 +31,8 @@ void fmd_pot_setCutoffRadius(fmd_sys_t *sysp, double cutoff)
     sysp->cutoffRadius = cutoff;
 }
 
-void fmd_pot_eam_free(fmd_sys_t *sysp)
+void pot_eam_free(eam_t *eam)
 {
-/*
     int i, j;
 
     for (i=0; i < eam->elementsNo; i++)
@@ -52,7 +51,6 @@ void fmd_pot_eam_free(fmd_sys_t *sysp)
 #endif
     }
     free(eam->elements);
-*/
 }
 
 static void EAM_convert_r_to_r2(eam_t *eam, double *source, double *dest)
@@ -255,11 +253,36 @@ void fmd_pot_setAtomKinds(fmd_sys_t *sysp, unsigned number, const fmd_string_t n
     }
 }
 
-void fmd_pot_free(fmd_sys_t *sysp)
+static void potlist_free(fmd_sys_t *sysp)
+{
+    list_t *potlist = sysp->potsys.potlist;
+
+    while (potlist != NULL)
+    {
+        fmd_pot_t *pot = (fmd_pot_t *)(potlist->data);
+
+        switch (pot->kind)
+        {
+            case POTKIND_EAM_ALLOY:
+                pot_eam_free((eam_t *)(pot->data));
+                break;
+        }
+
+        free(pot->data);
+        potlist = potlist->next;
+    }
+
+    fmd_list_free(sysp->potsys.potlist);
+}
+
+
+void fmd_potsys_free(fmd_sys_t *sysp)
 {
     if (sysp->potsys.atomkinds != NULL)
     {
-        // TO-DO: free aux
+        for (unsigned i=0; i<sysp->potsys.atomkinds_num; i++)
+            free(sysp->potsys.atomkinds[i].aux);
+
         free(sysp->potsys.atomkinds);
         sysp->potsys.atomkinds = NULL;
     }
@@ -272,14 +295,14 @@ void fmd_pot_free(fmd_sys_t *sysp)
 
     if (sysp->potsys.potlist != NULL)
     {
-        // TO-DO: FREE_POTLIST
-        // sysp->potsys.potlist = NULL;
+        potlist_free(sysp);
+        sysp->potsys.potlist = NULL;
     }
 
     if (sysp->potsys.potkinds != NULL)
     {
-        // TO-DO: FREE_POTKINDS
-        // sysp->potsys.potkinds = NULL;
+        fmd_list_free(sysp->potsys.potkinds);
+        sysp->potsys.potkinds = NULL;
     }
 }
 

@@ -1441,7 +1441,7 @@ void fmd_dync_setBerendsenThermostatParameter(fmd_sys_t *sysp, double parameter)
 void fmd_sys_free(fmd_sys_t *sysp, int finalizeMPI)
 {
     fmd_subd_free(sysp);
-    fmd_pot_free(sysp);
+    fmd_potsys_free(sysp);
     free(sysp);
     if (finalizeMPI)
     {
