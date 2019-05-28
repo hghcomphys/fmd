@@ -33,14 +33,12 @@ if not md.is_process_md:
     sys.exit()
 
 # add copper atoms
-FMD_PHYS_AMU = 1.036426957207970e-04
 name = ["Cu"]
-mass = [63.546 * FMD_PHYS_AMU]
+mass = [63.546]
 md.set_potential_atom_kinds(name, mass)
 
 # load the EAM file into memory; can be called only after fmd_box_setSubDomains()
 pot = md.load_potential_eam_alloy("../potentials/Cu01.eam.alloy")
-print (pot)
 
 # apply the potential
 md.apply_potential(0, 0, pot)

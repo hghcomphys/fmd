@@ -31,9 +31,8 @@ if not md.is_process_md:
     sys.exit()
 
 # have only argon atoms
-FMD_PHYS_AMU = 1.036426957207970e-04
 name = ["Ar"]
-mass = [39.948 * FMD_PHYS_AMU]
+mass = [39.948]
 md.set_potential_atom_kinds(name, mass)
 
 # use a 12-6 Lennard-Jones potential for Argon atoms
