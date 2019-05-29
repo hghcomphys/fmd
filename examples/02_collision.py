@@ -21,7 +21,7 @@ boxz = 20 * latticeParameter
 md.box_size = boxx, boxy, boxz
 
 # set periodic boundary conditions in three dimensions (False = no PBC)
-# md.box_pbc = False, False, False
+md.box_pbc = False, False, False
 
 # partition the simulation box into subdomains for MPI-based parallel computation
 md.subdomains = (1, 1, 2)
