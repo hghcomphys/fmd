@@ -252,7 +252,6 @@ static void computeEAM_pass0(fmd_sys_t *sysp, double FembSum)
     double *rho_iDD, *rho_jDD, *phiDD;
     double rho_ip, rho_jp;
     double mag;
-    double sum[3];
     double phi_deriv;
     double a, b, h;
     int ic0, ic1, ic2;
@@ -268,12 +267,12 @@ static void computeEAM_pass0(fmd_sys_t *sysp, double FembSum)
     // iterate over all cells(lists)
 #ifdef USE_TTM
     #pragma omp parallel for private(ic0,ic1,ic2,ttm_index,item1_p,d,element_i,rho_i,rho_iDD,kc,jc,item2_p,rv,r2,h,ir2, \
-      ir2_h,element_j,phi,phiDD,a,b,phi_deriv,rho_ip,rho_jp,rho_jDD,rho_j,mag,mass,dx,sum) \
+      ir2_h,element_j,phi,phiDD,a,b,phi_deriv,rho_ip,rho_jp,rho_jDD,rho_j,mag,mass,dx) \
       shared(sysp,ttm_lattice_aux,ttm_useSuction,ttm_suctionWidth,ttm_suctionIntensity,ttm_pxx_compute, \
       ttm_pxx_pos) default(none) collapse(3) reduction(+:potEnergy,pxx) schedule(static,1)
 #else
     #pragma omp parallel for private(ic0,ic1,ic2,item1_p,d,rho_i,rho_iDD,kc,jc,item2_p,rv,r2,h,ir2, \
-      ir2_h,phi,phiDD,a,b,phi_deriv,rho_ip,rho_jp,rho_jDD,rho_j,mag,sum) \
+      ir2_h,phi,phiDD,a,b,phi_deriv,rho_ip,rho_jp,rho_jDD,rho_j,mag) \
       shared(sysp,pottable) default(none) collapse(3) reduction(+:potEnergy) schedule(static,1)
 #endif
     for (ic0 = sysp->subDomain.ic_start[0]; ic0 < sysp->subDomain.ic_stop[0]; ic0++)
@@ -290,7 +289,7 @@ static void computeEAM_pass0(fmd_sys_t *sysp, double FembSum)
                 continue;
 
             for (d=0; d<3; d++)
-                sum[d] = 0.0;
+                item1_p->F[d] = 0.0;
 
             eam_t *eam;
             unsigned atomkind1, atomkind2;
@@ -357,7 +356,7 @@ static void computeEAM_pass0(fmd_sys_t *sysp, double FembSum)
                                     potEnergy += phi[ir2] + (r2/h - ir2) * (phi[ir2_h] - phi[ir2]);
 #endif
                                     for (d=0; d<3; d++)
-                                        sum[d] += mag * rv[d];
+                                        item1_p->F[d] -= mag * rv[d];
                                 }
                             }
                         }
@@ -368,7 +367,7 @@ static void computeEAM_pass0(fmd_sys_t *sysp, double FembSum)
 #ifdef USE_TTM
             mass = sysp->EAM.elements[element_i].mass;
             for (d=0; d<3; d++)
-                item1_p->F[d] = -sum[d] + ttm_lattice_aux[ttm_index].xi *
+                item1_p->F[d] += ttm_lattice_aux[ttm_index].xi *
                     mass * (item1_p->P.v[d] - ttm_lattice_aux[ttm_index].v_cm[d]);
             if (ttm_useSuction)
                 if (item1_p->P.x[0] < ttm_suctionWidth)
@@ -378,9 +377,6 @@ static void computeEAM_pass0(fmd_sys_t *sysp, double FembSum)
                 dx = item1_p->P.x[0] - ttm_pxx_pos;
                 pxx += item1_p->F[0] * ((dx > 0) - (dx < 0));
             }
-#else
-            for (d=0; d<3; d++)
-                item1_p->F[d] = -sum[d];
 #endif
         }
     }
