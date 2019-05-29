@@ -19,7 +19,7 @@ lattice_parameter = 5.26
 md.box_size = 10*lattice_parameter, 10*lattice_parameter, 10*lattice_parameter
 
 # set periodic boundary conditions in three dimensions (False = no PBC)
-md.box_pbc = True, True, True
+# md.box_pbc = True, True, True  # (default)
 
 # partition the simulation box into subdomains for MPI-based parallel computation
 md.subdomains = (1, 2, 1)
@@ -31,13 +31,10 @@ if not md.is_process_md:
     sys.exit()
 
 # have only argon atoms
-name = ["Ar"]
-mass = [39.948]
-md.set_potential_atom_kinds(name, mass)
+md.set_potential_atom_kinds({'Ar': 39.948})  # atomic symbols and masses
 
 # use a 12-6 Lennard-Jones potential for Argon atoms
-sigma = 3.4
-epsilon = 0.0104
+sigma, epsilon = 3.4, 0.0104
 cutoff = 2.5 * sigma
 md.apply_potential_lj(0, 0, sigma, epsilon, cutoff)
 
@@ -45,7 +42,7 @@ md.apply_potential_lj(0, 0, sigma, epsilon, cutoff)
 md.create_box_grid(cutoff)
 
 # set the desired temperature (in Kelvin)
-md.desired_temperature = 100.0
+md.desired_temperature = 100.0  # default is 300K
 
 # make an fcc cuboid at a given position and with a given size
 md.make_cuboid_fcc((0, 0, 0), (10, 10, 10), lattice_parameter, 0, 0)
@@ -54,7 +51,7 @@ md.make_cuboid_fcc((0, 0, 0), (10, 10, 10), lattice_parameter, 0, 0)
 md.material_distribute()
 
 # set time step to 2 femtoseconds
-md.time_step = 0.002
+md.time_step = 0.002  # default is 0.001
 
 # set where to save output files (default = current directory)
 # md.io_directory = "../"
@@ -80,13 +77,10 @@ while md.time < final_step:
 
     # take first step of velocity Verlet integrator
     md.velocity_verlet_first_step(use_thermostat=True)  # NVT ensemble
-
     # compute forces
     md.update_force()
-
     # take last step of velocity Verlet integrator
     md.velocity_verlet_second_step()
-
     # Or, simply call velocity_verlet method
     # md.update_position_and_velocity()
 

@@ -21,7 +21,7 @@ boxz = 20 * latticeParameter
 md.box_size = boxx, boxy, boxz
 
 # set periodic boundary conditions in three dimensions (False = no PBC)
-md.box_pbc = False, False, False
+# md.box_pbc = False, False, False
 
 # partition the simulation box into subdomains for MPI-based parallel computation
 md.subdomains = (1, 1, 2)
@@ -33,9 +33,7 @@ if not md.is_process_md:
     sys.exit()
 
 # add copper atoms
-name = ["Cu"]
-mass = [63.546]
-md.set_potential_atom_kinds(name, mass)
+md.set_potential_atom_kinds({'Cu': 63.546})  # symbols and masses (a.m.u)
 
 # load the EAM file into memory; can be called only after fmd_box_setSubDomains()
 pot = md.load_potential_eam_alloy("../potentials/Cu01.eam.alloy")
@@ -48,7 +46,7 @@ cutoff = md.get_potential_cutoff(pot)
 md.create_box_grid(cutoff)
 
 # set the desired temperature (in Kelvin)
-md.desired_temperature = 300.0
+# md.desired_temperature = 300.0  # default
 
 # make an fcc cuboid at a given position and with a given size
 cusize = 7
@@ -112,7 +110,7 @@ while md.time < final_step:
 md.save_io_state("state0.stt")
 
 # another report
-print ("The run took about %.3f seconds to finish." % md.process_wall_time)
+print("The run took about %.3f seconds to finish." % md.process_wall_time)
 
 # release memory taken for potential and fmd-system
-del md
+# del md
