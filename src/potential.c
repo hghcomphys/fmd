@@ -251,6 +251,7 @@ void fmd_pot_setAtomKinds(fmd_sys_t *sysp, unsigned number, const fmd_string_t n
         sysp->potsys.atomkinds[i].name = (char *)malloc(len + 1);
         strcpy(sysp->potsys.atomkinds[i].name, names[i]);
         sysp->potsys.atomkinds[i].aux = (atomkind_aux_t *)malloc(sizeof(atomkind_aux_t));
+        sysp->potsys.atomkinds[i].usesEAM = 0;
     }
 }
 
@@ -424,33 +425,7 @@ static int potkind_compare(const void *a, const void *b)
         return 1;
 }
 
-// TO-DO?: first, clean the list
-void fmd_pot_potkinds_update(fmd_sys_t *sysp)
-{
-    // TO-DO: error should be handled here
-    assert(sysp->potsys.pottable != NULL);
-
-    sysp->potsys.potkinds_num = 0;
-
-    for (unsigned i=0; i < sysp->potsys.atomkinds_num; i++)
-        for (unsigned j=0; j <= i; j++)
-        {
-            potpair_t *potpair = &sysp->potsys.pottable[i][j];
-
-            // TO-DO: error should be handled here
-            assert(potpair->kind != POTKIND_NONE);
-
-            // add the potkind to potkinds list, if isn't already included there
-            if (fmd_list_find_custom(sysp->potsys.potkinds, &potpair->kind, potkind_compare) == NULL)
-            {
-                sysp->potsys.potkinds_num++;
-                sysp->potsys.potkinds = fmd_list_prepend(sysp->potsys.potkinds, &potpair->kind);
-            }
-        }
-}
-
-// must be called only after a call to fmd_pot_potkinds_update()
-void fmd_pot_hybridpasses_update(fmd_sys_t *sysp)
+static void pot_hybridpasses_update(fmd_sys_t *sysp)
 {
     // fill hybridpasses with zeros
     memset(sysp->potsys.hybridpasses, 0, sizeof(sysp->potsys.hybridpasses));
@@ -473,6 +448,39 @@ void fmd_pot_hybridpasses_update(fmd_sys_t *sysp)
                 sysp->potsys.hybridpasses[1] = 1;
                 break;
         }
+
         potkinds = potkinds->next;
     }
+}
+
+// TO-DO?: first, clean the potkinds list
+void fmd_pot_prepareForForceComp(fmd_sys_t *sysp)
+{
+    // TO-DO: error should be handled here
+    assert(sysp->potsys.pottable != NULL);
+
+    sysp->potsys.potkinds_num = 0;
+
+    for (unsigned i=0; i < sysp->potsys.atomkinds_num; i++)
+        for (unsigned j=0; j <= i; j++)
+        {
+            potpair_t *potpair = &sysp->potsys.pottable[i][j];
+
+            // TO-DO: error should be handled here
+            assert(potpair->kind != POTKIND_NONE);
+
+            // add the potkind to potkinds list, if isn't already included there
+            if (fmd_list_find_custom(sysp->potsys.potkinds, &potpair->kind, potkind_compare) == NULL)
+            {
+                sysp->potsys.potkinds_num++;
+                sysp->potsys.potkinds = fmd_list_prepend(sysp->potsys.potkinds, &potpair->kind);
+            }
+
+            // do these two atomkinds use EAM?
+            if (potpair->kind == POTKIND_EAM_ALLOY)
+                sysp->potsys.atomkinds[i].usesEAM =
+                sysp->potsys.atomkinds[j].usesEAM = 1;
+        }
+
+    pot_hybridpasses_update(sysp);
 }

@@ -88,6 +88,7 @@ typedef struct
 {
     double mass;
     fmd_string_t name;
+    int usesEAM;
     atomkind_aux_t *aux;
 } atomkind_t;
 
@@ -108,7 +109,6 @@ typedef struct fmd_sys_t fmd_sys_t;
 
 void fmd_pot_free(fmd_sys_t *sysp);
 void fmd_pot_init(fmd_sys_t *sysp);
-void fmd_pot_potkinds_update(fmd_sys_t *sysp);
-void fmd_pot_hybridpasses_update(fmd_sys_t *sysp);
+void fmd_pot_prepareForForceComp(fmd_sys_t *sysp);
 
 #endif /* POTENTIAL_H */
