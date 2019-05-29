@@ -67,6 +67,91 @@
 #endif
 
 #ifdef USE_CSPLINE
+#define EAM_PAIR_UPDATE_FORCE_AND_POTENERGY                                     \
+    {                                                                           \
+        COMPUTE_rv_AND_r2;                                                      \
+                                                                                \
+        eam = (eam_t *)pottable[atomkind1][atomkind2].data;                     \
+                                                                                \
+        if (r2 < eam->cutoff_sqr)                                               \
+        {                                                                       \
+            h = eam->dr2;                                                       \
+            ir2 = (int)(r2 / h);                                                \
+            ir2_h = ir2 + 1;                                                    \
+            unsigned iloc = pottable[atomkind1][atomkind2].iloc;                \
+            unsigned jloc = pottable[atomkind1][atomkind2].jloc;                \
+                                                                                \
+            rho_i = eam->elements[iloc].rho;                                    \
+            rho_iDD = eam->elements[iloc].rhoDD;                                \
+            phi = eam->elements[iloc].phi[jloc];                                \
+            phiDD = eam->elements[iloc].phiDD[jloc];                            \
+            a = ir2_h - r2/h;                                                   \
+            b = 1-a;                                                            \
+            phi_deriv = SPLINE_DERIV(a,b,phi,ir2,ir2_h,phiDD,h);                \
+            rho_ip = SPLINE_DERIV(a,b,rho_i,ir2,ir2_h,rho_iDD,h);               \
+            if (jloc == iloc)                                                   \
+                rho_jp = rho_ip;                                                \
+            else                                                                \
+            {                                                                   \
+                rho_j = eam->elements[jloc].rho;                                \
+                rho_jDD = eam->elements[jloc].rhoDD;                            \
+                rho_jp = SPLINE_DERIV(a,b,rho_j,ir2,ir2_h,rho_jDD,h);           \
+            }                                                                   \
+                                                                                \
+            mag = 2 * (item1_p->FembPrime * rho_jp +                            \
+                  item2_p->FembPrime * rho_ip + phi_deriv);                     \
+            potEnergy += SPLINE_VAL(a,b,phi,ir2,ir2_h,phiDD,h);                 \
+                                                                                \
+            for (d=0; d<3; d++)                                                 \
+                item1_p->F[d] -= mag * rv[d];                                   \
+        }                                                                       \
+    }
+#else
+#define EAM_PAIR_UPDATE_FORCE_AND_POTENERGY                                     \
+    {                                                                           \
+        COMPUTE_rv_AND_r2;                                                      \
+                                                                                \
+        eam = (eam_t *)pottable[atomkind1][atomkind2].data;                     \
+                                                                                \
+        if (r2 < eam->cutoff_sqr)                                               \
+        {                                                                       \
+            h = eam->dr2;                                                       \
+            ir2 = (int)(r2 / h);                                                \
+            ir2_h = ir2 + 1;                                                    \
+            unsigned iloc = pottable[atomkind1][atomkind2].iloc;                \
+            unsigned jloc = pottable[atomkind1][atomkind2].jloc;                \
+                                                                                \
+            rho_i = eam->elements[iloc].rho;                                    \
+            phi = eam->elements[iloc].phi[jloc];                                \
+            rho_j = eam->elements[jloc].rho;                                    \
+            mag = 2 * (item1_p->FembPrime * (rho_j[ir2_h] - rho_j[ir2]) +       \
+                       item2_p->FembPrime * (rho_i[ir2_h] - rho_i[ir2]) +       \
+                                                (phi[ir2_h] - phi[ir2])) / h;   \
+            potEnergy += phi[ir2] + (r2/h - ir2) * (phi[ir2_h] - phi[ir2]);     \
+                                                                                \
+            for (d=0; d<3; d++)                                                 \
+                item1_p->F[d] -= mag * rv[d];                                   \
+        }                                                                       \
+    }
+#endif
+
+#define EAM_TTM_UPDATE_FORCE                                                    \
+    {                                                                           \
+        mass = sysp->EAM.elements[element_i].mass;                              \
+        for (d=0; d<3; d++)                                                     \
+            item1_p->F[d] += ttm_lattice_aux[ttm_index].xi *                    \
+                mass * (item1_p->P.v[d] - ttm_lattice_aux[ttm_index].v_cm[d]);  \
+        if (ttm_useSuction)                                                     \
+            if (item1_p->P.x[0] < ttm_suctionWidth)                             \
+                item1_p->F[0] -= mass * ttm_suctionIntensity;                   \
+        if (ttm_pxx_compute)                                                    \
+        {                                                                       \
+            dx = item1_p->P.x[0] - ttm_pxx_pos;                                 \
+            pxx += item1_p->F[0] * ((dx > 0) - (dx < 0));                       \
+        }                                                                       \
+    }
+
+#ifdef USE_CSPLINE
 #define EAM_COMPUTE_FembPrime_AND_UPDATE_Femb_sum                                \
     {                                                                            \
         if (rho_host == 0.0)                                                     \
@@ -312,52 +397,8 @@ static void computeEAM_pass0(fmd_sys_t *sysp, double FembSum)
                                 continue;
                             if (item1_p != item2_p)
                             {
-                                COMPUTE_rv_AND_r2;
-
                                 atomkind2 = item2_p->P.elementID;
-                                eam = (eam_t *)pottable[atomkind1][atomkind2].data;
-
-                                if (r2 < eam->cutoff_sqr)
-                                {
-                                    h = eam->dr2;
-                                    ir2 = (int)(r2 / h);
-                                    ir2_h = ir2 + 1;
-                                    unsigned iloc = pottable[atomkind1][atomkind2].iloc;
-                                    unsigned jloc = pottable[atomkind1][atomkind2].jloc;
-
-                                    rho_i = eam->elements[iloc].rho;
-#ifdef USE_CSPLINE
-                                    rho_iDD = eam->elements[iloc].rhoDD;
-#endif
-                                    phi = eam->elements[iloc].phi[jloc];
-#ifdef USE_CSPLINE
-                                    phiDD = eam->elements[iloc].phiDD[jloc];
-                                    a = ir2_h - r2/h;
-                                    b = 1-a;
-                                    phi_deriv = SPLINE_DERIV(a,b,phi,ir2,ir2_h,phiDD,h);
-                                    rho_ip = SPLINE_DERIV(a,b,rho_i,ir2,ir2_h,rho_iDD,h);
-                                    if (jloc == iloc)
-                                        rho_jp = rho_ip;
-                                    else
-                                    {
-                                        rho_j = eam->elements[jloc].rho;
-                                        rho_jDD = eam->elements[jloc].rhoDD;
-                                        rho_jp = SPLINE_DERIV(a,b,rho_j,ir2,ir2_h,rho_jDD,h);
-                                    }
-
-                                    mag = 2 * (item1_p->FembPrime * rho_jp +
-                                          item2_p->FembPrime * rho_ip + phi_deriv);
-                                    potEnergy += SPLINE_VAL(a,b,phi,ir2,ir2_h,phiDD,h);
-#else
-                                    rho_j = eam->elements[jloc].rho;
-                                    mag = 2 * (item1_p->FembPrime * (rho_j[ir2_h] - rho_j[ir2]) +
-                                               item2_p->FembPrime * (rho_i[ir2_h] - rho_i[ir2]) +
-                                                                        (phi[ir2_h] - phi[ir2])) / h;
-                                    potEnergy += phi[ir2] + (r2/h - ir2) * (phi[ir2_h] - phi[ir2]);
-#endif
-                                    for (d=0; d<3; d++)
-                                        item1_p->F[d] -= mag * rv[d];
-                                }
+                                EAM_PAIR_UPDATE_FORCE_AND_POTENERGY;
                             }
                         }
                     }
@@ -365,24 +406,15 @@ static void computeEAM_pass0(fmd_sys_t *sysp, double FembSum)
             }
 
 #ifdef USE_TTM
-            mass = sysp->EAM.elements[element_i].mass;
-            for (d=0; d<3; d++)
-                item1_p->F[d] += ttm_lattice_aux[ttm_index].xi *
-                    mass * (item1_p->P.v[d] - ttm_lattice_aux[ttm_index].v_cm[d]);
-            if (ttm_useSuction)
-                if (item1_p->P.x[0] < ttm_suctionWidth)
-                    item1_p->F[0] -= mass * ttm_suctionIntensity;
-            if (ttm_pxx_compute)
-            {
-                dx = item1_p->P.x[0] - ttm_pxx_pos;
-                pxx += item1_p->F[0] * ((dx > 0) - (dx < 0));
-            }
+            EAM_TTM_UPDATE_FORCE;
 #endif
         }
     }
+
 #ifdef USE_TTM
     ttm_pxx_local[1] += pxx;
 #endif
+
     potEnergy = 0.5 * potEnergy + FembSum;
     MPI_Allreduce(&potEnergy, &sysp->totalPotentialEnergy, 1, MPI_DOUBLE, MPI_SUM, sysp->MD_comm);
 }
