@@ -31,10 +31,8 @@ if not md.is_process_md:
     md.free_system(finalize_mpi=True)
     sys.exit()
 
-# add copper and argon atoms
-names = ["Cu", "Ar"]
-masses = [63.546, 39.948]
-md.set_potential_atom_kinds(names, masses)
+# add copper atoms
+md.set_potential_atom_kinds({'Cu': 63.546, 'Ar': 39.948})  # symbols and masses (a.m.u)
 
 # load the EAM file into memory; can be called only after setting subdomains
 pot = md.load_potential_eam_alloy("../potentials/Cu01.eam.alloy")
@@ -68,7 +66,6 @@ z1 = (lz - cusize * lp1) / 2
 md.make_cuboid_fcc((x0, y0, z0), (cusize, cusize, cusize), lp0, 0, 0)
 
 # add an fcc Ar cuboid with a different groupID
-posx = boxx - cusize*latticeParameter - posx
 md.make_cuboid_fcc((x1, y1, z1), (cusize, cusize, cusize), lp1, 0, 1)
 
 # distribute the matter among subdomains
@@ -122,7 +119,7 @@ while md.time < final_step:
 md.save_io_state("state0.stt")
 
 # another report
-print ("The run took about %.3f seconds to finish." % md.process_wall_time)
+print("The run took about %.3f seconds to finish." % md.process_wall_time)
 
 # release memory taken for potential and fmd-system
-del md
+# del md
