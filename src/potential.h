@@ -22,6 +22,8 @@
 
 typedef char *fmd_string_t;
 
+typedef struct eam_t eam_t;
+
 typedef struct
 {
     double mass;
@@ -33,15 +35,16 @@ typedef struct
     double **phi;
     double **phiDD;
     fmd_string_t name;
+    eam_t *eam;
 } eam_element_t;
 
-typedef struct
+struct eam_t
 {
     eam_element_t *elements;
     double drho, dr, dr2, cutoff_sqr;
     int elementsNo;
     int Nrho, Nr, Nr2;
-} eam_t;
+};
 
 typedef struct
 {
@@ -81,15 +84,9 @@ typedef struct
 
 typedef struct
 {
-    double eam_F0;
-} atomkind_aux_t;
-
-typedef struct
-{
     double mass;
     fmd_string_t name;
-    int usesEAM;
-    atomkind_aux_t *aux;
+    eam_element_t *eam_element;
 } atomkind_t;
 
 typedef struct list_t list_t;

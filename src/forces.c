@@ -176,47 +176,33 @@
     }
 
 #ifdef USE_CSPLINE
-#define EAM_COMPUTE_FembPrime_AND_UPDATE_Femb_sum                                \
-    {                                                                            \
-        if (rho_host == 0.0)                                                     \
-        { /* the first atom didn't see any other atom within its cutoff sphere */\
-            Femb_sum += sysp->potsys.atomkinds[atomkind1].aux->eam_F0;           \
-        }                                                                        \
-        else                                                                     \
-        {                                                                        \
-            h = eam->drho;                                                       \
-            irho = (int)(rho_host / h);                                          \
-            assert(irho < eam->Nrho - 1);                                        \
-            irho_h = irho + 1;                                                   \
-                                                                                 \
-            unsigned iloc = pottable[atomkind1][atomkind2].iloc;                 \
-            F = eam->elements[iloc].F;                                           \
-            F_DD = eam->elements[iloc].F_DD;                                     \
-            a = irho_h - rho_host/h;                                             \
-            b = 1-a;                                                             \
-            item1_p->FembPrime = SPLINE_DERIV(a,b,F,irho,irho_h,F_DD,h);         \
-            Femb_sum += SPLINE_VAL(a,b,F,irho,irho_h,F_DD,h);                    \
-        }                                                                        \
+#define EAM_COMPUTE_FembPrime_AND_UPDATE_Femb_sum                            \
+    {                                                                        \
+        eam_element_t *el = sysp->potsys.atomkinds[atomkind1].eam_element;   \
+        eam = el->eam;                                                       \
+        h = eam->drho;                                                       \
+        irho = (int)(rho_host / h);                                          \
+        assert(irho < eam->Nrho - 1);                                        \
+        irho_h = irho + 1;                                                   \
+        F = el->F;                                                           \
+        F_DD = el->F_DD;                                                     \
+        a = irho_h - rho_host/h;                                             \
+        b = 1-a;                                                             \
+        item1_p->FembPrime = SPLINE_DERIV(a,b,F,irho,irho_h,F_DD,h);         \
+        Femb_sum += SPLINE_VAL(a,b,F,irho,irho_h,F_DD,h);                    \
     }
 #else
-#define EAM_COMPUTE_FembPrime_AND_UPDATE_Femb_sum                                \
-    {                                                                            \
-        if (rho_host == 0.0)                                                     \
-        { /* the first atom didn't see any other atom within its cutoff sphere */\
-            Femb_sum += sysp->potsys.atomkinds[atomkind1].aux->eam_F0;           \
-        }                                                                        \
-        else                                                                     \
-        {                                                                        \
-            h = eam->drho;                                                       \
-            irho = (int)(rho_host / h);                                          \
-            assert(irho < eam->Nrho - 1);                                        \
-            irho_h = irho + 1;                                                   \
-                                                                                 \
-            unsigned iloc = pottable[atomkind1][atomkind2].iloc;                 \
-            F = eam->elements[iloc].F;                                           \
-            item1_p->FembPrime = (F[irho_h] - F[irho]) / h;                      \
-            Femb_sum += F[irho] + (rho_host - irho * h) * item1_p->FembPrime;    \
-        }                                                                        \
+#define EAM_COMPUTE_FembPrime_AND_UPDATE_Femb_sum                            \
+    {                                                                        \
+        eam_element_t *el = sysp->potsys.atomkinds[atomkind1].eam_element;   \
+        eam = el->eam;                                                       \
+        h = eam->drho;                                                       \
+        irho = (int)(rho_host / h);                                          \
+        assert(irho < eam->Nrho - 1);                                        \
+        irho_h = irho + 1;                                                   \
+        F = el->F;                                                           \
+        item1_p->FembPrime = (F[irho_h] - F[irho]) / h;                      \
+        Femb_sum += F[irho] + (rho_host - irho * h) * item1_p->FembPrime;    \
     }
 #endif
 
@@ -250,7 +236,7 @@ static void compute_hybrid_pass1(fmd_sys_t *sysp, double *FembSum_p)
             unsigned atomkind1, atomkind2;
             atomkind1 = item1_p->P.elementID;
 
-            if (!sysp->potsys.atomkinds[atomkind1].usesEAM)
+            if (sysp->potsys.atomkinds[atomkind1].eam_element == NULL)
                 continue;
 
             double rho_host = 0.0;
@@ -371,7 +357,6 @@ static void compute_hybrid_pass0(fmd_sys_t *sysp, double FembSum)
                                         LJ_PAIR_UPDATE_FORCE_AND_POTENERGY;
                                         break;
                                 }
-
                             }
                         }
                     }
@@ -441,7 +426,7 @@ static void computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
                 }
             }
 
-            EAM_COMPUTE_FembPrime_AND_UPDATE_Femb_sum;
+            EAM_COMPUTE_FembPrime_AND_UPDATE_Femb_sum(atomkind1,atomkind2);
         }
     }
     *FembSum_p=Femb_sum;

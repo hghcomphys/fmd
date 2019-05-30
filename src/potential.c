@@ -106,6 +106,7 @@ static eam_t *load_DYNAMOsetfl(fmd_sys_t *sysp, char *filePath)
         double *tempArray = (double *)malloc(eam->Nr * sizeof(double));
         for (i=0; i < eam->elementsNo; i++)
         {
+            eam->elements[i].eam = eam;
             fscanf(fp, "%s%lf%lf%s", str, &eam->elements[i].mass,
                 &eam->elements[i].latticeParameter, str);
             eam->elements[i].mass /= MD_MASS_UNIT;
@@ -160,6 +161,7 @@ static eam_t *load_DYNAMOsetfl(fmd_sys_t *sysp, char *filePath)
         eam->elements = (eam_element_t *)malloc(eam->elementsNo * sizeof(eam_element_t));
         for (i=0; i < eam->elementsNo; i++)
         {
+            eam->elements[i].eam = eam;
             eam->elements[i].F = (double *)malloc(eam->Nrho * sizeof(double));
             eam->elements[i].rho = (double *)malloc(eam->Nr2 * sizeof(double));
             eam->elements[i].phi = (double **)malloc(eam->elementsNo * sizeof(double *));
@@ -250,8 +252,6 @@ void fmd_pot_setAtomKinds(fmd_sys_t *sysp, unsigned number, const fmd_string_t n
         size_t len = strlen(names[i]);
         sysp->potsys.atomkinds[i].name = (char *)malloc(len + 1);
         strcpy(sysp->potsys.atomkinds[i].name, names[i]);
-        sysp->potsys.atomkinds[i].aux = (atomkind_aux_t *)malloc(sizeof(atomkind_aux_t));
-        sysp->potsys.atomkinds[i].usesEAM = 0;
     }
 }
 
@@ -284,9 +284,6 @@ void fmd_potsys_free(fmd_sys_t *sysp)
 {
     if (sysp->potsys.atomkinds != NULL)
     {
-        for (unsigned i=0; i<sysp->potsys.atomkinds_num; i++)
-            free(sysp->potsys.atomkinds[i].aux);
-
         free(sysp->potsys.atomkinds);
         sysp->potsys.atomkinds = NULL;
     }
@@ -362,9 +359,9 @@ void fmd_pot_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomkind2, fmd_
         sysp->potsys.pottable[atomkind2][atomkind1].iloc = loc2;
         sysp->potsys.pottable[atomkind2][atomkind1].jloc = loc1;
 
-        // set eam_F0
-        sysp->potsys.atomkinds[atomkind1].aux->eam_F0 = ((eam_t *)pot->data)->elements[loc1].F[0];
-        sysp->potsys.atomkinds[atomkind2].aux->eam_F0 = ((eam_t *)pot->data)->elements[loc2].F[0];
+        // set eam_element
+        sysp->potsys.atomkinds[atomkind1].eam_element = &((eam_t *)pot->data)->elements[loc1];
+        sysp->potsys.atomkinds[atomkind2].eam_element = &((eam_t *)pot->data)->elements[loc2];
     }
 
     //
@@ -477,9 +474,9 @@ void fmd_pot_prepareForForceComp(fmd_sys_t *sysp)
             }
 
             // do these two atomkinds use EAM?
-            if (potpair->kind == POTKIND_EAM_ALLOY)
-                sysp->potsys.atomkinds[i].usesEAM =
-                sysp->potsys.atomkinds[j].usesEAM = 1;
+            if (potpair->kind != POTKIND_EAM_ALLOY)
+                sysp->potsys.atomkinds[i].eam_element =
+                sysp->potsys.atomkinds[j].eam_element = NULL;
         }
 
     pot_hybridpasses_update(sysp);
