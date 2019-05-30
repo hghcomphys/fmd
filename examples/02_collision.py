@@ -31,7 +31,7 @@ if not md.is_process_md:
     md.free_system(finalize_mpi=True)
     sys.exit()
 
-# add copper atoms
+# add copper and argon atoms
 md.set_potential_atom_kinds({'Cu': 63.546, 'Ar': 39.948})  # symbols and masses (a.m.u)
 
 # load the EAM file into memory; can be called only after setting subdomains
