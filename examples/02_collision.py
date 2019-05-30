@@ -14,11 +14,10 @@ from pyfmd import Calculator
 md = Calculator()
 
 # set size of the simulation box (in Angstrom)
-latticeParameter = 3.6316
-boxx = 40 * latticeParameter
-boxy = 20 * latticeParameter
-boxz = 20 * latticeParameter
-md.box_size = boxx, boxy, boxz
+lx = 250.0
+ly = 250.0
+lz = 250.0
+md.box_size = lx, ly, lz
 
 # set periodic boundary conditions in three dimensions (False = no PBC)
 md.box_pbc = False, False, False
@@ -27,39 +26,50 @@ md.box_pbc = False, False, False
 md.subdomains = (1, 1, 2)
 
 # sometimes the user launches more processes than the chosen number of subdomains; they're not needed here!
-# the function fmd_proc_isMD() can be called only after setting subdomains.
+# 'is_process_md' can be called only after setting subdomains.
 if not md.is_process_md:
     md.free_system(finalize_mpi=True)
     sys.exit()
 
-# add copper atoms
-name = ["Cu"]
-mass = [63.546]
-md.set_potential_atom_kinds(name, mass)
+# add copper and argon atoms
+names = ["Cu", "Ar"]
+masses = [63.546, 39.948]
+md.set_potential_atom_kinds(names, masses)
 
-# load the EAM file into memory; can be called only after fmd_box_setSubDomains()
+# load the EAM file into memory; can be called only after setting subdomains
 pot = md.load_potential_eam_alloy("../potentials/Cu01.eam.alloy")
 
-# apply the potential
+# apply the EAM potential for Cu
 md.apply_potential(0, 0, pot)
 
-# get the EAM potential cutoff radius and define the box grid by using it
-cutoff = md.get_potential_cutoff(pot)
-md.create_box_grid(cutoff)
+# use 12-6 Lennard-Jones potentials for Ar-Ar and Cu-Ar interactions
+md.apply_potential_lj(1, 1, 3.40, 0.0104, 2.5*3.40)
+md.apply_potential_lj(0, 1, 2.87, 0.0652, 2.5*2.87)
+
+# create the box grid
+md.create_box_grid(2.5*3.40)
 
 # set the desired temperature (in Kelvin)
-md.desired_temperature = 300.0
+md.desired_temperature = 40.0
 
-# make an fcc cuboid at a given position and with a given size
-cusize = 7
-posx = 10.0
-posy = (boxy - cusize*latticeParameter) / 2.0
-posz = (boxz - cusize*latticeParameter) / 2.0
-md.make_cuboid_fcc((posx, posy+cusize*latticeParameter*.35, posz), (cusize, cusize, cusize), latticeParameter, 0, 0)
+# prepare some parameters
+dc = 30.0      # the initial distance between the colliding objects
+cusize = 7     # cusize x cusize x cusize = number of unit cells in each object
+lp0 = 3.6316   # lattice parameter of copper
+lp1 = 5.26     # lattice parameter of argon
+x0 = (lx - dc) / 2 - cusize * lp0
+y0 = (ly - cusize * lp0) / 2
+z0 = (lz - cusize * lp0) / 2
+x1 = (lx + dc) / 2
+y1 = (ly - cusize * lp1) / 2
+z1 = (lz - cusize * lp1) / 2
 
-# add another fcc cuboid with a different groupID
+# make an fcc Cu cuboid at a given position and with a given size
+md.make_cuboid_fcc((x0, y0, z0), (cusize, cusize, cusize), lp0, 0, 0)
+
+# add an fcc Ar cuboid with a different groupID
 posx = boxx - cusize*latticeParameter - posx
-md.make_cuboid_fcc((posx, posy-cusize*latticeParameter*.35, posz), (cusize, cusize, cusize), latticeParameter, 0, 1)
+md.make_cuboid_fcc((x1, y1, z1), (cusize, cusize, cusize), lp1, 0, 1)
 
 # distribute the matter among subdomains
 md.material_distribute()
@@ -70,21 +80,21 @@ md.time_step = 0.002
 # set where to save output files (default = current directory)
 md.io_directory = "../"
 
-# let configurations be saved as VTF files
+# let configurations be saved as XYZ files
 md.set_io_config_mode(0)
 
 # set Berendsen thermostat parameter
 md.set_berendsen_thermostat_parameter(0.02)
 
 # equilibrate the two clusters
-print("equilibrating the first cluster...")
-md.equilibrate(0, 3.0, 2e-2)
-print("equilibrating the second cluster...")
-md.equilibrate(1, 3.0, 2e-2)
+print("equilibrating the copper object...\n")
+md.equilibrate(0, 1.0, 2e-2)
+print("equilibrating the argon object...\n")
+md.equilibrate(1, 1.0, 2e-2)
 
 # add some center-of-mass velocity to atoms of groups 0 and 1
-md.add_velocity(0, (+15., 0., 0.))
-md.add_velocity(1, (-15., 0., 0.))
+md.add_velocity(0, (+8., 0., 0.))
+md.add_velocity(1, (-8., 0., 0.))
 
 # activate all groups for dynamics; -1 as a groupID means all groups
 md.set_active_group(-1)
@@ -92,10 +102,10 @@ md.set_active_group(-1)
 # compute forces for the first time
 md.update_force()
 
-final_step = 8.0
+final_step = 6.5
 while md.time < final_step:
 
-    # save configuration every 40 femtoseconds
+    # save configuration every 60 femtoseconds
     if md.get_time() % 0.06 < md.get_time_step():
         md.save_io_config()
 

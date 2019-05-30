@@ -19,11 +19,8 @@ int main(int argc, char *argv[])
     sys = fmd_sys_create();
 
     // set size of the simulation box (in Angstrom)
-    double latticeParameter = 3.6316;
-    double boxx = 40*latticeParameter;
-    double boxy = 20*latticeParameter;
-    double boxz = 20*latticeParameter;
-    fmd_box_setSize(sys, boxx, boxy, boxz);
+    double lx, ly, lz;
+    fmd_box_setSize(sys, lx=250.0, ly=250.0, lz=250.0);
 
     // set periodic boundary conditions in three dimensions (0 = no PBC)
     fmd_box_setPBC(sys, 0, 0, 0);
@@ -39,34 +36,44 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    // let's have only copper atoms
-    fmd_string_t name[1] = {"Cu"};
-    double mass[1] = {63.546};
-    fmd_pot_setAtomKinds(sys, 1, name, mass);
+    // let's have copper and argon atoms
+    fmd_string_t names[2] = {"Cu", "Ar"};
+    double masses[2] = {63.546, 39.948};
+    fmd_pot_setAtomKinds(sys, 2, names, masses);
 
     // load the EAM file into memory; can be called only after fmd_box_setSubDomains()
     fmd_pot_t *pot = fmd_pot_eam_alloy_load(sys, "../potentials/Cu01.eam.alloy");
 
-    // apply the potential
+    // apply the EAM potential for Cu
     fmd_pot_apply(sys, 0, 0, pot);
 
-    // get the EAM potential cutoff radius and create the box grid by using it
-    double cutoff = fmd_pot_eam_getCutoffRadius(sys, pot);
-    fmd_box_createGrid(sys, cutoff);
+    // use 12-6 Lennard-Jones potentials for Ar-Ar and Cu-Ar interactions
+    fmd_pot_lj_apply(sys, 1, 1, 3.40, 0.0104, 2.5*3.40);
+    fmd_pot_lj_apply(sys, 0, 1, 2.87, 0.0652, 2.5*2.87);
+
+    // create the grid
+    fmd_box_createGrid(sys, 2.5*3.40);
 
     // set the desired temperature (in Kelvin)
-    fmd_matt_setDesiredTemperature(sys, 300.0);
+    fmd_matt_setDesiredTemperature(sys, 40.0);
 
-    // make an fcc cuboid at a given position and with a given size
-    int cusize = 7;
-    double posx = 10.0;
-    double posy = (boxy - cusize*latticeParameter) / 2.0;
-    double posz = (boxz - cusize*latticeParameter) / 2.0;
-    fmd_matt_makeCuboidFCC(sys, posx, posy+cusize*latticeParameter*.35, posz, cusize, cusize, cusize, latticeParameter, 0, 0);
+    // prepare some parameters
+    double dc = 30.0;     // the initial distance between the colliding objects
+    int cusize = 7;       // cusize x cusize x cusize = number of unit cells in each object
+    double lp0 = 3.6316;  // lattice parameter of copper
+    double lp1 = 5.26;    // lattice parameter of argon
+    double x0 = (lx - dc) / 2 - cusize * lp0;
+    double y0 = (ly - cusize * lp0) / 2;
+    double z0 = (lz - cusize * lp0) / 2;
+    double x1 = (lx + dc) / 2;
+    double y1 = (ly - cusize * lp1) / 2;
+    double z1 = (lz - cusize * lp1) / 2;
 
-    // add another fcc cuboid with a different groupID
-    posx = boxx - cusize*latticeParameter - posx;
-    fmd_matt_makeCuboidFCC(sys, posx, posy-cusize*latticeParameter*.35, posz, cusize, cusize, cusize, latticeParameter, 0, 1);
+    // make an fcc Cu cuboid at a given position and with a given size
+    fmd_matt_makeCuboidFCC(sys, x0, y0, z0, cusize, cusize, cusize, lp0, 0, 0);
+
+    // add an fcc Ar cuboid with a different groupID
+    fmd_matt_makeCuboidFCC(sys, x1, y1, z1, cusize, cusize, cusize, lp1, 1, 1);
 
     // distribute the matter among subdomains
     fmd_matt_distribute(sys);
@@ -75,26 +82,26 @@ int main(int argc, char *argv[])
     fmd_dync_setTimeStep(sys, 2e-3);
 
     // set where to save output files (default = current directory)
-    fmd_io_setSaveDirectory(sys, "output/");
+    //fmd_io_setSaveDirectory(sys, "output/");
 
-    // let configurations be saved as VTF files
-    fmd_io_setSaveConfigMode(sys, scmVTF);
+    // let configurations be saved as XYZ files
+    fmd_io_setSaveConfigMode(sys, scmXYZParticlesNum);
 
-    // equilibrate the two clusters
-    fmd_io_printf(sys, "equilibrating the first cluster...\n");
-    fmd_dync_equilibrate(sys, 0, 3.0, 2e-2);
-    fmd_io_printf(sys, "equilibrating the second cluster...\n");
-    fmd_dync_equilibrate(sys, 1, 3.0, 2e-2);
+    // equilibrate the two colliding objects
+    fmd_io_printf(sys, "equilibrating the copper object...\n");
+    fmd_dync_equilibrate(sys, 0, 1.0, 2e-2);
+    fmd_io_printf(sys, "equilibrating the argon object...\n");
+    fmd_dync_equilibrate(sys, 1, 1.0, 2e-2);
 
-    // add some center-of-mass velocity to atoms of groups 0 and 1
-    fmd_matt_addVelocity(sys, 0, 15., 0., 0.);
-    fmd_matt_addVelocity(sys, 1, -15., 0., 0.);
+    // add some center-of-mass velocity to the atoms of the objects (groups 0 and 1)
+    fmd_matt_addVelocity(sys, 0, +8., 0., 0.);
+    fmd_matt_addVelocity(sys, 1, -8., 0., 0.);
 
     // activate all groups for dynamics; -1 as a groupID means all groups
     fmd_matt_setActiveGroup(sys, -1);
 
-    // let us simulate for 8 picoseconds
-    double final_time = 8.0;
+    // let us simulate for 6.5 picoseconds
+    double final_time = 6.5;
 
     // compute forces for the first time
     fmd_dync_updateForces(sys);
