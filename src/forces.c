@@ -151,6 +151,30 @@
         }                                                                       \
     }
 
+#define LJ_PAIR_UPDATE_FORCE_AND_POTENERGY                                      \
+    {                                                                           \
+        COMPUTE_rv_AND_r2;                                                      \
+                                                                                \
+        LJ_6_12_t *lj = (LJ_6_12_t *)pottable[atomkind1][atomkind2].data;       \
+                                                                                \
+        if (r2 < lj->cutoff_sqr)                                                \
+        {                                                                       \
+            double inv_r2, inv_rs2, inv_rs6, inv_rs12;                          \
+                                                                                \
+            /* force, F = -(d/dr)U */                                           \
+            inv_r2 = 1.0/r2;                                                    \
+            inv_rs2 = SQR(lj->sig) * inv_r2;                                    \
+            inv_rs6 = inv_rs2 * inv_rs2 * inv_rs2;                              \
+            inv_rs12 = SQR(inv_rs6);                                            \
+            double factor = 48.0 * lj->eps * inv_r2 * (inv_rs12 - 0.5*inv_rs6); \
+            for (d=0; d<3; d++)                                                 \
+                item1_p->F[d] += rv[d] * factor;                                \
+                                                                                \
+            /* potential energy, U = 4*eps*( (sig/r)^12 - (sig/r)^6 ) */        \
+            potEnergy += 4.0 * lj->eps * (inv_rs12 - inv_rs6);                  \
+        }                                                                       \
+    }
+
 #ifdef USE_CSPLINE
 #define EAM_COMPUTE_FembPrime_AND_UPDATE_Femb_sum                                \
     {                                                                            \
@@ -262,6 +286,102 @@ static void compute_hybrid_pass1(fmd_sys_t *sysp, double *FembSum_p)
     }
 
     *FembSum_p=Femb_sum;
+}
+
+static void compute_hybrid_pass0(fmd_sys_t *sysp, double FembSum)
+{
+    int jc[3], kc[3];
+    int d, ir2, ir2_h;
+    TParticleListItem *item1_p, *item2_p;
+    double r2, rv[3];
+    double *rho_i, *rho_j, *phi;
+    double *rho_iDD, *rho_jDD, *phiDD;
+    double rho_ip, rho_jp;
+    double mag;
+    double phi_deriv;
+    double a, b, h;
+    int ic0, ic1, ic2;
+    potpair_t **pottable = sysp->potsys.pottable;
+#ifdef USE_TTM
+    double mass;
+    int ttm_index;
+    double dx;
+    double pxx = 0.0;
+#endif
+    double potEnergy = 0.0;
+
+    // iterate over all cells(lists)
+#ifdef USE_TTM
+    #pragma omp parallel for private(ic0,ic1,ic2,ttm_index,item1_p,d,element_i,rho_i,rho_iDD,kc,jc,item2_p,rv,r2,h,ir2, \
+      ir2_h,element_j,phi,phiDD,a,b,phi_deriv,rho_ip,rho_jp,rho_jDD,rho_j,mag,mass,dx) \
+      shared(sysp,ttm_lattice_aux,ttm_useSuction,ttm_suctionWidth,ttm_suctionIntensity,ttm_pxx_compute, \
+      ttm_pxx_pos) default(none) collapse(3) reduction(+:potEnergy,pxx) schedule(static,1)
+#else
+    #pragma omp parallel for private(ic0,ic1,ic2,item1_p,d,rho_i,rho_iDD,kc,jc,item2_p,rv,r2,h,ir2, \
+      ir2_h,phi,phiDD,a,b,phi_deriv,rho_ip,rho_jp,rho_jDD,rho_j,mag) \
+      shared(sysp,pottable) default(none) collapse(3) reduction(+:potEnergy) schedule(static,1)
+#endif
+    for (ic0 = sysp->subDomain.ic_start[0]; ic0 < sysp->subDomain.ic_stop[0]; ic0++)
+    for (ic1 = sysp->subDomain.ic_start[1]; ic1 < sysp->subDomain.ic_stop[1]; ic1++)
+    for (ic2 = sysp->subDomain.ic_start[2]; ic2 < sysp->subDomain.ic_stop[2]; ic2++)
+    {
+#ifdef USE_TTM
+        ttm_index = ic0 - sysp->subDomain.ic_start[0] + 1;
+#endif
+        // iterate over all items in cell ic
+        for (item1_p = sysp->subDomain.grid[ic0][ic1][ic2]; item1_p != NULL; item1_p = item1_p->next_p)
+        {
+            if (!(sysp->activeGroup == -1 || item1_p->P.groupID == sysp->activeGroup))
+                continue;
+
+            for (d=0; d<3; d++)
+                item1_p->F[d] = 0.0;
+
+            eam_t *eam;
+            unsigned atomkind1, atomkind2;
+            atomkind1 = item1_p->P.elementID;
+
+            // iterate over neighbor cells of cell ic
+            for (kc[0]=ic0-1; kc[0]<=ic0+1; kc[0]++)
+            {
+                SET_jc_IN_DIRECTION(0)
+                for (kc[1]=ic1-1; kc[1]<=ic1+1; kc[1]++)
+                {
+                    SET_jc_IN_DIRECTION(1)
+                    for (kc[2]=ic2-1; kc[2]<=ic2+1; kc[2]++)
+                    {
+                        SET_jc_IN_DIRECTION(2)
+                        // iterate over all items in cell jc
+                        for (item2_p = sysp->subDomain.grid[jc[0]][jc[1]][jc[2]]; item2_p != NULL; item2_p = item2_p->next_p)
+                        {
+                            if (!(sysp->activeGroup == -1 || item2_p->P.groupID == sysp->activeGroup))
+                                continue;
+
+                            if (item1_p != item2_p)
+                            {
+                                atomkind2 = item2_p->P.elementID;
+
+                                switch (pottable[atomkind1][atomkind2].kind)
+                                {
+                                    case POTKIND_EAM_ALLOY:
+                                        EAM_PAIR_UPDATE_FORCE_AND_POTENERGY;
+                                        break;
+
+                                    case POTKIND_LJ_6_12:
+                                        LJ_PAIR_UPDATE_FORCE_AND_POTENERGY;
+                                        break;
+                                }
+
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    potEnergy = 0.5 * potEnergy + FembSum;
+    MPI_Allreduce(&potEnergy, &sysp->totalPotentialEnergy, 1, MPI_DOUBLE, MPI_SUM, sysp->MD_comm);
 }
 
 static void computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
@@ -395,6 +515,7 @@ static void computeEAM_pass0(fmd_sys_t *sysp, double FembSum)
                         {
                             if (!(sysp->activeGroup == -1 || item2_p->P.groupID == sysp->activeGroup))
                                 continue;
+
                             if (item1_p != item2_p)
                             {
                                 atomkind2 = item2_p->P.elementID;
@@ -466,9 +587,10 @@ static void computeLJ(fmd_sys_t *sysp)
 
                                     if (item1_p != item2_p)
                                     {
+                                        unsigned atomkind2 = item2_p->P.elementID;
+
                                         COMPUTE_rv_AND_r2;
 
-                                        unsigned atomkind2 = item2_p->P.elementID;
                                         LJ_6_12_t *lj = (LJ_6_12_t *)pottable[atomkind1][atomkind2].data;
 
                                         if (r2 < lj->cutoff_sqr)
@@ -600,7 +722,7 @@ void fmd_dync_updateForces(fmd_sys_t *sysp)
 
     fmd_ghostparticles_init(sysp);
 
-    if (sysp->potsys.potkinds_num == 1)
+    if (sysp->potsys.potkinds_num == 1) // not hybrid mode
     {
         potkind_t potkind = *(potkind_t *)(sysp->potsys.potkinds->data);
 
@@ -622,6 +744,19 @@ void fmd_dync_updateForces(fmd_sys_t *sysp)
                 computeEAM_pass0(sysp, FembSum);
                 break;
         }
+    }
+    else  // hybrid mode
+    {
+        double FembSum = 0.0;
+
+        if (sysp->potsys.hybridpasses[1])
+        {
+            compute_hybrid_pass1(sysp, &FembSum);
+            fmd_ghostparticles_update_Femb(sysp);
+        }
+
+        if (sysp->potsys.hybridpasses[0])
+            compute_hybrid_pass0(sysp, FembSum);
     }
 
     fmd_ghostparticles_delete(sysp);
