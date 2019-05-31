@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
     // set where to save output files (default = current directory)
     //fmd_io_setSaveDirectory(sys, "output/");
 
-    // let configurations be saved as XYZ files
+    // save configurations as XYZ files
     fmd_io_setSaveConfigMode(sys, scmXYZParticlesNum);
 
     // equilibrate the two colliding objects
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     // activate all groups for dynamics; -1 as a groupID means all groups
     fmd_matt_setActiveGroup(sys, -1);
 
-    // let us simulate for 6.5 picoseconds
+    // simulate for 6.5 picoseconds
     double final_time = 6.5;
 
     // compute forces for the first time
