@@ -178,7 +178,7 @@
 #ifdef USE_CSPLINE
 #define EAM_COMPUTE_FembPrime_AND_UPDATE_Femb_sum                            \
     {                                                                        \
-        eam_element_t *el = sysp->potsys.atomkinds[atomkind1].eam_element;   \
+        eam_element_t *el = atomkinds[atomkind1].eam_element;                \
         eam = el->eam;                                                       \
         h = eam->drho;                                                       \
         irho = (int)(rho_host / h);                                          \
@@ -194,7 +194,7 @@
 #else
 #define EAM_COMPUTE_FembPrime_AND_UPDATE_Femb_sum                            \
     {                                                                        \
-        eam_element_t *el = sysp->potsys.atomkinds[atomkind1].eam_element;   \
+        eam_element_t *el = atomkinds[atomkind1].eam_element;                \
         eam = el->eam;                                                       \
         h = eam->drho;                                                       \
         irho = (int)(rho_host / h);                                          \
@@ -217,10 +217,11 @@ static void compute_hybrid_pass1(fmd_sys_t *sysp, double *FembSum_p)
     int ic0, ic1, ic2;
     double Femb_sum=0.0;
     potpair_t **pottable = sysp->potsys.pottable;
+    atomkind_t *atomkinds = sysp->potsys.atomkinds;
 
     // iterate over all cells(lists)
     #pragma omp parallel for private(ic0,ic1,ic2,item1_p,kc,jc,item2_p,d,rv,r2,h,ir2,ir2_h,a,b,rho, \
-      rhoDD,F,F_DD,irho,irho_h) shared(sysp,pottable) default(none) collapse(3) reduction(+:Femb_sum) \
+      rhoDD,F,F_DD,irho,irho_h) shared(sysp,pottable,atomkinds) default(none) collapse(3) reduction(+:Femb_sum) \
       schedule(static,1)
     for (ic0 = sysp->subDomain.ic_start[0]; ic0 < sysp->subDomain.ic_stop[0]; ic0++)
     for (ic1 = sysp->subDomain.ic_start[1]; ic1 < sysp->subDomain.ic_stop[1]; ic1++)
@@ -380,10 +381,11 @@ static void computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
     int ic0, ic1, ic2;
     double Femb_sum=0;
     potpair_t **pottable = sysp->potsys.pottable;
+    atomkind_t *atomkinds = sysp->potsys.atomkinds;
 
     // iterate over all cells(lists)
     #pragma omp parallel for private(ic0,ic1,ic2,item1_p,kc,jc,item2_p,d,rv,r2,h,ir2,ir2_h,a,b,rho, \
-      rhoDD,F,F_DD,irho,irho_h) shared(sysp,pottable) default(none) collapse(3) reduction(+:Femb_sum) \
+      rhoDD,F,F_DD,irho,irho_h) shared(sysp,pottable,atomkinds) default(none) collapse(3) reduction(+:Femb_sum) \
       schedule(static,1)
     for (ic0 = sysp->subDomain.ic_start[0]; ic0 < sysp->subDomain.ic_stop[0]; ic0++)
     for (ic1 = sysp->subDomain.ic_start[1]; ic1 < sysp->subDomain.ic_stop[1]; ic1++)
@@ -426,7 +428,7 @@ static void computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
                 }
             }
 
-            EAM_COMPUTE_FembPrime_AND_UPDATE_Femb_sum(atomkind1,atomkind2);
+            EAM_COMPUTE_FembPrime_AND_UPDATE_Femb_sum;
         }
     }
     *FembSum_p=Femb_sum;
