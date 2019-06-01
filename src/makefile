@@ -1,21 +1,24 @@
+CC = mpicc
+SHAREDLIB = libfmd.so
 CFLAGS = -fPIC -Wall -Wno-unused-result -O3 -fopenmp
 LFLAGS = -lm -fopenmp -lgsl -lgslcblas
-CC = mpicc
-OBJS = base.o cspline.o md_ghost.o forces.o potential.o array.o list.o
-SHAREDLIB = libfmd.so
-BASE_H = base.h potential.h
+
+OBJS ::= $(patsubst %.c,%.o,$(wildcard *.c))
 
 .PHONY: all shared clean
 all: shared
 shared: $(SHAREDLIB)
 $(SHAREDLIB): $(OBJS)
-	$(CC) $^ -shared -o $@ $(LFLAGS)
-base.o: $(BASE_H) md_ghost.h forces.h
-forces.o: forces.h $(BASE_H) cspline.h md_ghost.h list.h
-md_ghost.o: $(BASE_H) md_ghost.h
-potential.o: $(BASE_H) cspline.h potential.h array.h list.h
-cspline.o: cspline.h
-array.o: array.h
-list.o: list.h
+	$(CC) $(OBJS) -shared -o $@ $(LFLAGS)
+
+array.o: array.c array.h
+base.o: base.c base.h potential.h md_ghost.h forces.h
+cspline.o: cspline.c cspline.h
+forces.o: forces.c forces.h base.h potential.h cspline.h md_ghost.h \
+ list.h
+list.o: list.c list.h
+md_ghost.o: md_ghost.c base.h potential.h md_ghost.h
+potential.o: potential.c potential.h base.h cspline.h array.h list.h
+
 clean:
 	rm -f *.o libfmd.so
