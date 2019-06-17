@@ -20,6 +20,8 @@
 #ifndef LIST_H
 #define LIST_H
 
+#include "config.h"
+
 typedef int (*comparefunc_t)(const void *a, const void *b);
 
 typedef struct list_t list_t;

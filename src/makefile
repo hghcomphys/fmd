@@ -1,7 +1,7 @@
 CC = mpicc
 SHAREDLIB = libfmd.so
 CFLAGS = -fPIC -Wall -Wno-unused-result -O3 -fopenmp
-LFLAGS = -lm -fopenmp -lgsl -lgslcblas
+LFLAGS = -fopenmp -lgsl -lgslcblas
 
 OBJS ::= $(patsubst %.c,%.o,$(wildcard *.c))
 
@@ -10,15 +10,21 @@ all: shared
 shared: $(SHAREDLIB)
 $(SHAREDLIB): $(OBJS)
 	$(CC) $(OBJS) -shared -o $@ $(LFLAGS)
-
-array.o: array.c array.h
-base.o: base.c base.h potential.h md_ghost.h forces.h
-cspline.o: cspline.c cspline.h
-forces.o: forces.c forces.h base.h potential.h cspline.h md_ghost.h \
+##### the following lines can be updated by using "gcc -MM *.c"
+array.o: array.c array.h config.h
+base.o: base.c base.h config.h potential.h types.h md_ghost.h forces.h
+cspline.o: cspline.c cspline.h config.h
+eam.o: eam.c eam.h config.h forces.h types.h cspline.h base.h potential.h \
  list.h
-list.o: list.c list.h
-md_ghost.o: md_ghost.c base.h potential.h md_ghost.h
-potential.o: potential.c potential.h base.h cspline.h array.h list.h
-
+forces.o: forces.c forces.h config.h eam.h types.h cspline.h lj.h morse.h \
+ base.h potential.h md_ghost.h list.h
+list.o: list.c list.h config.h
+lj.o: lj.c lj.h config.h potential.h types.h base.h list.h forces.h
+md_ghost.o: md_ghost.c base.h config.h potential.h types.h md_ghost.h
+morse.o: morse.c morse.h config.h base.h potential.h types.h forces.h \
+ list.h
+potential.o: potential.c potential.h config.h types.h base.h array.h \
+ list.h eam.h forces.h cspline.h
+#####
 clean:
 	rm -f *.o libfmd.so

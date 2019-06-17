@@ -1,7 +1,7 @@
 /*
   potential.h: This file is part of Free Molecular Dynamics
 
-  Copyright (C) 2019 Arham Amouye Foumani, Hossein Ghorbanfekr
+  Copyright (C) 2019 Arham Amouye Foumani
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,46 +20,8 @@
 #ifndef POTENTIAL_H
 #define POTENTIAL_H
 
-typedef char *fmd_string_t;
-
-typedef struct eam_t eam_t;
-
-typedef struct
-{
-    double mass;
-    double latticeParameter;
-    double *F;
-    double *F_DD;
-    double *rho;
-    double *rhoDD;
-    double **phi;
-    double **phiDD;
-    fmd_string_t name;
-    eam_t *eam;
-} eam_element_t;
-
-struct eam_t
-{
-    eam_element_t *elements;
-    double drho, dr, dr2, cutoff_sqr;
-    int elementsNo;
-    int Nrho, Nr, Nr2;
-};
-
-typedef struct
-{
-    double eps;
-    double sig;
-    double cutoff_sqr;
-} LJ_6_12_t;
-
-typedef struct
-{
-    double D0;
-    double alpha;
-    double r0;
-    double cutoff_sqr;
-} morse_t;
+#include "config.h"
+#include "types.h"
 
 typedef enum
 {
@@ -81,6 +43,8 @@ typedef struct
     void *data;
     unsigned iloc, jloc;    // local indexes inside the potential, used in potentials like EAM
 } potpair_t;
+
+typedef struct eam_element_t eam_element_t;
 
 typedef struct
 {
@@ -104,8 +68,9 @@ typedef struct
 
 typedef struct fmd_sys_t fmd_sys_t;
 
-void fmd_pot_free(fmd_sys_t *sysp);
-void fmd_pot_init(fmd_sys_t *sysp);
+void fmd_potsys_free(fmd_sys_t *sysp);
+void fmd_potsys_init(fmd_sys_t *sysp);
 void fmd_pot_prepareForForceComp(fmd_sys_t *sysp);
+void fmd_pot_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomkind2, fmd_pot_t *pot);
 
 #endif /* POTENTIAL_H */

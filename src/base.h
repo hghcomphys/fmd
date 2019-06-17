@@ -20,8 +20,7 @@
 #ifndef BASE_H
 #define BASE_H
 
-//#define NDEBUG
-#define USE_CSPLINE
+#include "config.h"
 
 #include <float.h>
 #include <stdio.h>

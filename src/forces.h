@@ -20,6 +20,8 @@
 #ifndef FORCES_H
 #define FORCES_H
 
+#include "config.h"
+
 #define COMPUTE_rv_AND_r2                                                    \
     for (d=0; d<3; d++)                                                      \
     {                                                                        \

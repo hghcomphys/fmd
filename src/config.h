@@ -1,5 +1,5 @@
 /*
-  array.h: This file is part of Free Molecular Dynamics
+  config.h: This file is part of Free Molecular Dynamics
 
   Copyright (C) 2019 Arham Amouye Foumani
 
@@ -17,12 +17,10 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ARRAY_H
-#define ARRAY_H
+#ifndef CONFIG_H
+#define CONFIG_H
 
-#include "config.h"
+//#define NDEBUG
+#define USE_CSPLINE
 
-void **fmd_array_neat2d_create(unsigned dim1, unsigned dim2, unsigned elsize);
-void fmd_array_neat2d_free(void **array);
-
-#endif /* ARRAY_H */
+#endif /* CONFIG_H */

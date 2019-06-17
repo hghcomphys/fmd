@@ -20,6 +20,8 @@
 #ifndef CSPLINE_H
 #define CSPLINE_H
 
+#include "config.h"
+
 #define SPLINE_VAL(a,b,y,lo,hi,yDD,h) ((a)*(y)[lo]+(b)*(y)[hi]+(((a)*(a)*(a)-(a))*(yDD)[lo]+((b)*(b)*(b)-(b))*(yDD)[hi])*((h)*(h))/6.0)
 #define SPLINE_DERIV(a,b,y,lo,hi,yDD,h) (((y)[hi]-(y)[lo])/(h)+((3*(b)*(b)-1)*(yDD)[hi]-(3*(a)*(a)-1)*(yDD)[lo])*(h)/6.0)
 

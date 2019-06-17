@@ -1,5 +1,5 @@
 /*
-  array.h: This file is part of Free Molecular Dynamics
+  types.h: This file is part of Free Molecular Dynamics
 
   Copyright (C) 2019 Arham Amouye Foumani
 
@@ -17,12 +17,11 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ARRAY_H
-#define ARRAY_H
+#ifndef TYPES_H
+#define TYPES_H
 
 #include "config.h"
 
-void **fmd_array_neat2d_create(unsigned dim1, unsigned dim2, unsigned elsize);
-void fmd_array_neat2d_free(void **array);
+typedef char *fmd_string_t;
 
-#endif /* ARRAY_H */
+#endif /* TYPES_H */
