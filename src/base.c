@@ -713,7 +713,7 @@ void insertInList(TParticleListItem **root_pp, TParticleListItem *item_p)
     *root_pp = item_p;
 }
 
-void fmd_io_loadState(fmd_t *md, char *file, int useTime)
+void fmd_io_loadState(fmd_t *md, fmd_string_t file, int useTime)
 {
     TParticleListItem *item_p;
     FILE *fp;
@@ -1058,7 +1058,7 @@ void fmd_matt_saveConfiguration(fmd_t *md)
     }
 }
 
-void fmd_io_saveState(fmd_t *md, char *filename)
+void fmd_io_saveState(fmd_t *md, fmd_string_t filename)
 {
     TParticle *is_particles, *P_p;
     int *nums;
@@ -1308,7 +1308,7 @@ void fmd_matt_makeCuboidFCC(fmd_t *md, double x, double y, double z,
     free(proportions);
 }
 
-void fmd_io_setSaveDirectory(fmd_t *md, char *directory)
+void fmd_io_setSaveDirectory(fmd_t *md, fmd_string_t directory)
 {
     strcpy(md->saveDirectory, directory);
 }
@@ -1365,7 +1365,7 @@ void fmd_dync_equilibrate(fmd_t *md, int groupID, double duration, double streng
     md->mdTime = 0.0;
 }
 
-void fmd_io_printf(fmd_t *md, const char * restrict format, ...)
+void fmd_io_printf(fmd_t *md, const fmd_string_t restrict format, ...)
 {
     if (md->isMDprocess && md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
     {

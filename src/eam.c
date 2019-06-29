@@ -353,7 +353,7 @@ static eam_t *load_DYNAMOsetfl(fmd_t *md, char *filePath)
     return eam;
 }
 
-fmd_pot_t *fmd_pot_eam_alloy_load(fmd_t *md, char *filePath)
+fmd_pot_t *fmd_pot_eam_alloy_load(fmd_t *md, fmd_string_t filePath)
 {
     eam_t *eam = load_DYNAMOsetfl(md, filePath);
 

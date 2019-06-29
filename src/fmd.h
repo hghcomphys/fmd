@@ -56,13 +56,13 @@ void fmd_box_setSize(fmd_t *md, double sx, double sy, double sz);
 void fmd_box_setSubDomains(fmd_t *md, int dimx, int dimy, int dimz);
 void fmd_box_createGrid(fmd_t *md, double cutoff);
 
-void fmd_io_setSaveDirectory(fmd_t *md, char *directory);
+void fmd_io_setSaveDirectory(fmd_t *md, fmd_string_t directory);
 void fmd_io_setSaveConfigMode(fmd_t *md, fmd_SaveConfigMode_t mode);
-void fmd_io_printf(fmd_t *md, const char * restrict format, ...);
-void fmd_io_loadState(fmd_t *md, char *filepath, int useTime);
-void fmd_io_saveState(fmd_t *md, char *filename);
+void fmd_io_printf(fmd_t *md, const fmd_string_t restrict format, ...);
+void fmd_io_loadState(fmd_t *md, fmd_string_t filepath, int useTime);
+void fmd_io_saveState(fmd_t *md, fmd_string_t filename);
 
-fmd_pot_t *fmd_pot_eam_alloy_load(fmd_t *md, char *filePath);
+fmd_pot_t *fmd_pot_eam_alloy_load(fmd_t *md, fmd_string_t filePath);
 double fmd_pot_eam_getLatticeParameter(fmd_t *md, fmd_pot_t *pot, fmd_string_t element);
 double fmd_pot_eam_getCutoffRadius(fmd_t *md, fmd_pot_t *pot);
 void fmd_pot_setCutoffRadius(fmd_t *md, double cutoff);
