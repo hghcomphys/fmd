@@ -14,9 +14,7 @@ from pyfmd import Calculator
 md = Calculator()
 
 # set size of the simulation box (in Angstrom)
-lx = 250.0
-ly = 250.0
-lz = 250.0
+lx, ly, lz = 250.0, 250.0, 250.0
 md.box_size = lx, ly, lz
 
 # set periodic boundary conditions in three dimensions (False = no PBC)
@@ -66,7 +64,7 @@ z1 = (lz - cusize * lp1) / 2
 md.make_cuboid_fcc((x0, y0, z0), (cusize, cusize, cusize), lp0, 0, 0)
 
 # add an fcc Ar cuboid with a different groupID
-md.make_cuboid_fcc((x1, y1, z1), (cusize, cusize, cusize), lp1, 0, 1)
+md.make_cuboid_fcc((x1, y1, z1), (cusize, cusize, cusize), lp1, 1, 1)
 
 # distribute the matter among subdomains
 md.material_distribute()
