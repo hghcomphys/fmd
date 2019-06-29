@@ -52,8 +52,8 @@ typedef struct
     double cutoff_sqr;
 } morse_t;
 
-typedef struct fmd_sys_t fmd_sys_t;
+typedef struct fmd_t fmd_t;
 
-void fmd_computeMorse(fmd_sys_t *sysp);
+void fmd_computeMorse(fmd_t *md);
 
 #endif /* MORSE_H */

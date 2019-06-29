@@ -23,7 +23,7 @@
 
 #define EAM_TTM_UPDATE_FORCE                                                    \
     {                                                                           \
-        mass = sysp->EAM.elements[element_i].mass;                              \
+        mass = md->EAM.elements[element_i].mass;                              \
         for (d=0; d<3; d++)                                                     \
             item1_p->F[d] += ttm_lattice_aux[ttm_index].xi *                    \
                 mass * (item1_p->P.v[d] - ttm_lattice_aux[ttm_index].v_cm[d]);  \
@@ -37,7 +37,7 @@
         }                                                                       \
     }
 
-void fmd_computeEAM_pass0(fmd_sys_t *sysp, double FembSum)
+void fmd_computeEAM_pass0(fmd_t *md, double FembSum)
 {
     int jc[3], kc[3];
     int d, ir2, ir2_h;
@@ -50,7 +50,7 @@ void fmd_computeEAM_pass0(fmd_sys_t *sysp, double FembSum)
     double phi_deriv;
     double a, b, h;
     int ic0, ic1, ic2;
-    potpair_t **pottable = sysp->potsys.pottable;
+    potpair_t **pottable = md->potsys.pottable;
 #ifdef USE_TTM
     double mass;
     int ttm_index;
@@ -63,24 +63,24 @@ void fmd_computeEAM_pass0(fmd_sys_t *sysp, double FembSum)
 #ifdef USE_TTM
     #pragma omp parallel for private(ic0,ic1,ic2,ttm_index,item1_p,d,element_i,rho_i,rho_iDD,kc,jc,item2_p,rv,r2,h,ir2, \
       ir2_h,element_j,phi,phiDD,a,b,phi_deriv,rho_ip,rho_jp,rho_jDD,rho_j,mag,mass,dx) \
-      shared(sysp,ttm_lattice_aux,ttm_useSuction,ttm_suctionWidth,ttm_suctionIntensity,ttm_pxx_compute, \
+      shared(md,ttm_lattice_aux,ttm_useSuction,ttm_suctionWidth,ttm_suctionIntensity,ttm_pxx_compute, \
       ttm_pxx_pos) default(none) collapse(3) reduction(+:potEnergy,pxx) schedule(static,1)
 #else
     #pragma omp parallel for private(ic0,ic1,ic2,item1_p,d,rho_i,rho_iDD,kc,jc,item2_p,rv,r2,h,ir2, \
       ir2_h,phi,phiDD,a,b,phi_deriv,rho_ip,rho_jp,rho_jDD,rho_j,mag) \
-      shared(sysp,pottable) default(none) collapse(3) reduction(+:potEnergy) schedule(static,1)
+      shared(md,pottable) default(none) collapse(3) reduction(+:potEnergy) schedule(static,1)
 #endif
-    for (ic0 = sysp->subDomain.ic_start[0]; ic0 < sysp->subDomain.ic_stop[0]; ic0++)
-    for (ic1 = sysp->subDomain.ic_start[1]; ic1 < sysp->subDomain.ic_stop[1]; ic1++)
-    for (ic2 = sysp->subDomain.ic_start[2]; ic2 < sysp->subDomain.ic_stop[2]; ic2++)
+    for (ic0 = md->subDomain.ic_start[0]; ic0 < md->subDomain.ic_stop[0]; ic0++)
+    for (ic1 = md->subDomain.ic_start[1]; ic1 < md->subDomain.ic_stop[1]; ic1++)
+    for (ic2 = md->subDomain.ic_start[2]; ic2 < md->subDomain.ic_stop[2]; ic2++)
     {
 #ifdef USE_TTM
-        ttm_index = ic0 - sysp->subDomain.ic_start[0] + 1;
+        ttm_index = ic0 - md->subDomain.ic_start[0] + 1;
 #endif
         // iterate over all items in cell ic
-        for (item1_p = sysp->subDomain.grid[ic0][ic1][ic2]; item1_p != NULL; item1_p = item1_p->next_p)
+        for (item1_p = md->subDomain.grid[ic0][ic1][ic2]; item1_p != NULL; item1_p = item1_p->next_p)
         {
-            if (!(sysp->activeGroup == -1 || item1_p->P.groupID == sysp->activeGroup))
+            if (!(md->activeGroup == -1 || item1_p->P.groupID == md->activeGroup))
                 continue;
 
             for (d=0; d<3; d++)
@@ -101,9 +101,9 @@ void fmd_computeEAM_pass0(fmd_sys_t *sysp, double FembSum)
                     {
                         SET_jc_IN_DIRECTION(2)
                         // iterate over all items in cell jc
-                        for (item2_p = sysp->subDomain.grid[jc[0]][jc[1]][jc[2]]; item2_p != NULL; item2_p = item2_p->next_p)
+                        for (item2_p = md->subDomain.grid[jc[0]][jc[1]][jc[2]]; item2_p != NULL; item2_p = item2_p->next_p)
                         {
-                            if (!(sysp->activeGroup == -1 || item2_p->P.groupID == sysp->activeGroup))
+                            if (!(md->activeGroup == -1 || item2_p->P.groupID == md->activeGroup))
                                 continue;
 
                             if (item1_p != item2_p)
@@ -127,10 +127,10 @@ void fmd_computeEAM_pass0(fmd_sys_t *sysp, double FembSum)
 #endif
 
     potEnergy = 0.5 * potEnergy + FembSum;
-    MPI_Allreduce(&potEnergy, &sysp->totalPotentialEnergy, 1, MPI_DOUBLE, MPI_SUM, sysp->MD_comm);
+    MPI_Allreduce(&potEnergy, &md->totalPotentialEnergy, 1, MPI_DOUBLE, MPI_SUM, md->MD_comm);
 }
 
-void fmd_computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
+void fmd_computeEAM_pass1(fmd_t *md, double *FembSum_p)
 {
     int jc[3], kc[3];
     int d, ir2, irho, ir2_h, irho_h;
@@ -140,21 +140,21 @@ void fmd_computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
     double a, b, h;
     int ic0, ic1, ic2;
     double Femb_sum=0;
-    potpair_t **pottable = sysp->potsys.pottable;
-    atomkind_t *atomkinds = sysp->potsys.atomkinds;
+    potpair_t **pottable = md->potsys.pottable;
+    atomkind_t *atomkinds = md->potsys.atomkinds;
 
     // iterate over all cells(lists)
     #pragma omp parallel for private(ic0,ic1,ic2,item1_p,kc,jc,item2_p,d,rv,r2,h,ir2,ir2_h,a,b,rho, \
-      rhoDD,F,F_DD,irho,irho_h) shared(sysp,pottable,atomkinds) default(none) collapse(3) reduction(+:Femb_sum) \
+      rhoDD,F,F_DD,irho,irho_h) shared(md,pottable,atomkinds) default(none) collapse(3) reduction(+:Femb_sum) \
       schedule(static,1)
-    for (ic0 = sysp->subDomain.ic_start[0]; ic0 < sysp->subDomain.ic_stop[0]; ic0++)
-    for (ic1 = sysp->subDomain.ic_start[1]; ic1 < sysp->subDomain.ic_stop[1]; ic1++)
-    for (ic2 = sysp->subDomain.ic_start[2]; ic2 < sysp->subDomain.ic_stop[2]; ic2++)
+    for (ic0 = md->subDomain.ic_start[0]; ic0 < md->subDomain.ic_stop[0]; ic0++)
+    for (ic1 = md->subDomain.ic_start[1]; ic1 < md->subDomain.ic_stop[1]; ic1++)
+    for (ic2 = md->subDomain.ic_start[2]; ic2 < md->subDomain.ic_stop[2]; ic2++)
     {
         // iterate over all items in cell ic
-        for (item1_p = sysp->subDomain.grid[ic0][ic1][ic2]; item1_p != NULL; item1_p = item1_p->next_p)
+        for (item1_p = md->subDomain.grid[ic0][ic1][ic2]; item1_p != NULL; item1_p = item1_p->next_p)
         {
-            if (!(sysp->activeGroup == -1 || item1_p->P.groupID == sysp->activeGroup))
+            if (!(md->activeGroup == -1 || item1_p->P.groupID == md->activeGroup))
                 continue;
 
             eam_t *eam;
@@ -173,9 +173,9 @@ void fmd_computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p)
                     {
                         SET_jc_IN_DIRECTION(2)
                         // iterate over all items in cell jc
-                        for (item2_p = sysp->subDomain.grid[jc[0]][jc[1]][jc[2]]; item2_p != NULL; item2_p = item2_p->next_p)
+                        for (item2_p = md->subDomain.grid[jc[0]][jc[1]][jc[2]]; item2_p != NULL; item2_p = item2_p->next_p)
                         {
-                            if (!(sysp->activeGroup == -1 || item2_p->P.groupID == sysp->activeGroup))
+                            if (!(md->activeGroup == -1 || item2_p->P.groupID == md->activeGroup))
                                 continue;
 
                             if (item1_p != item2_p)
@@ -212,13 +212,13 @@ static void EAM_convert_r_to_r2(eam_t *eam, double *source, double *dest)
     free(sourceDD);
 }
 
-static eam_t *load_DYNAMOsetfl(fmd_sys_t *sysp, char *filePath)
+static eam_t *load_DYNAMOsetfl(fmd_t *md, char *filePath)
 {
     int i, j, k;
 
     eam_t *eam = (eam_t *)malloc(sizeof(eam_t));
 
-    if (sysp->subDomain.myrank == MAINPROCESS(sysp->subDomain.numprocs))
+    if (md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
     {
         FILE *fp = fopen(filePath, "r");
         handleFileOpenError(fp, filePath);
@@ -295,8 +295,8 @@ static eam_t *load_DYNAMOsetfl(fmd_sys_t *sysp, char *filePath)
         fclose(fp);
     }
 
-    MPI_Bcast(eam, sizeof(eam_t), MPI_CHAR, MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
-    if (sysp->subDomain.myrank != MAINPROCESS(sysp->subDomain.numprocs))
+    MPI_Bcast(eam, sizeof(eam_t), MPI_CHAR, MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
+    if (md->subDomain.myrank != MAINPROCESS(md->subDomain.numprocs))
     {
         eam->elements = (eam_element_t *)malloc(eam->elementsNo * sizeof(eam_element_t));
         for (i=0; i < eam->elementsNo; i++)
@@ -325,48 +325,48 @@ static eam_t *load_DYNAMOsetfl(fmd_sys_t *sysp, char *filePath)
 
     for (i=0; i < eam->elementsNo; i++)
     {
-        MPI_Bcast(&eam->elements[i].mass, 1, MPI_DOUBLE, MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
-        MPI_Bcast(&eam->elements[i].latticeParameter, 1, MPI_DOUBLE, MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
+        MPI_Bcast(&eam->elements[i].mass, 1, MPI_DOUBLE, MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
+        MPI_Bcast(&eam->elements[i].latticeParameter, 1, MPI_DOUBLE, MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
 
         unsigned namelen;
-        if (sysp->subDomain.myrank == MAINPROCESS(sysp->subDomain.numprocs))
+        if (md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
             namelen = strlen(eam->elements[i].name);
-        MPI_Bcast(&namelen, 1, MPI_UNSIGNED, MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
-        if (sysp->subDomain.myrank != MAINPROCESS(sysp->subDomain.numprocs))
+        MPI_Bcast(&namelen, 1, MPI_UNSIGNED, MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
+        if (md->subDomain.myrank != MAINPROCESS(md->subDomain.numprocs))
             eam->elements[i].name = (char *)malloc(namelen + 1);
-        MPI_Bcast(eam->elements[i].name, namelen+1, MPI_CHAR, MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
+        MPI_Bcast(eam->elements[i].name, namelen+1, MPI_CHAR, MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
 
-        MPI_Bcast(eam->elements[i].F, eam->Nrho, MPI_DOUBLE, MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
-        MPI_Bcast(eam->elements[i].rho, eam->Nr2, MPI_DOUBLE, MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
+        MPI_Bcast(eam->elements[i].F, eam->Nrho, MPI_DOUBLE, MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
+        MPI_Bcast(eam->elements[i].rho, eam->Nr2, MPI_DOUBLE, MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
         for (j=0; j<=i; j++)
             MPI_Bcast(eam->elements[i].phi[j], eam->Nr2, MPI_DOUBLE,
-                      MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
+                      MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
 #ifdef USE_CSPLINE
-        MPI_Bcast(eam->elements[i].F_DD, eam->Nrho, MPI_DOUBLE, MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
-        MPI_Bcast(eam->elements[i].rhoDD, eam->Nr2, MPI_DOUBLE, MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
+        MPI_Bcast(eam->elements[i].F_DD, eam->Nrho, MPI_DOUBLE, MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
+        MPI_Bcast(eam->elements[i].rhoDD, eam->Nr2, MPI_DOUBLE, MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
         for (j=0; j<=i; j++)
             MPI_Bcast(eam->elements[i].phiDD[j], eam->Nr2, MPI_DOUBLE,
-                      MAINPROCESS(sysp->subDomain.numprocs), sysp->MD_comm);
+                      MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
 #endif
     }
 
     return eam;
 }
 
-fmd_pot_t *fmd_pot_eam_alloy_load(fmd_sys_t *sysp, char *filePath)
+fmd_pot_t *fmd_pot_eam_alloy_load(fmd_t *md, char *filePath)
 {
-    eam_t *eam = load_DYNAMOsetfl(sysp, filePath);
+    eam_t *eam = load_DYNAMOsetfl(md, filePath);
 
     fmd_pot_t *pot = (fmd_pot_t *)malloc(sizeof(fmd_pot_t));
     pot->kind = POTKIND_EAM_ALLOY;
     pot->data = eam;
 
-    sysp->potsys.potlist = fmd_list_prepend(sysp->potsys.potlist, pot);
+    md->potsys.potlist = fmd_list_prepend(md->potsys.potlist, pot);
 
     return pot;
 }
 
-double fmd_pot_eam_getCutoffRadius(fmd_sys_t *sysp, fmd_pot_t *pot)
+double fmd_pot_eam_getCutoffRadius(fmd_t *md, fmd_pot_t *pot)
 {
     // TO-DO: handle error
     assert(pot->kind == POTKIND_EAM_ALLOY);
@@ -397,7 +397,7 @@ void fmd_pot_eam_free(eam_t *eam)
     free(eam);
 }
 
-double fmd_pot_eam_getLatticeParameter(fmd_sys_t *sysp, fmd_pot_t *pot, fmd_string_t element)
+double fmd_pot_eam_getLatticeParameter(fmd_t *md, fmd_pot_t *pot, fmd_string_t element)
 {
     // TO-DO: handle error
     assert(pot->kind == POTKIND_EAM_ALLOY);
@@ -410,10 +410,10 @@ double fmd_pot_eam_getLatticeParameter(fmd_sys_t *sysp, fmd_pot_t *pot, fmd_stri
     // TO-DO: if element is not found in the potential, notify the library user
 }
 
-unsigned fmd_pot_eam_find_iloc(fmd_sys_t *sysp, eam_t *eam, unsigned atomkind)
+unsigned fmd_pot_eam_find_iloc(fmd_t *md, eam_t *eam, unsigned atomkind)
 {
     for (int i=0; i < eam->elementsNo; i++)
-        if (strcmp(sysp->potsys.atomkinds[atomkind].name, eam->elements[i].name) == 0)
+        if (strcmp(md->potsys.atomkinds[atomkind].name, eam->elements[i].name) == 0)
             return i;
 
     // return -1 if the given eam potential doesn't include the specified atom kind

@@ -53,8 +53,8 @@ typedef struct
     double cutoff_sqr;
 } LJ_6_12_t;
 
-typedef struct fmd_sys_t fmd_sys_t;
+typedef struct fmd_t fmd_t;
 
-void fmd_computeLJ(fmd_sys_t *sysp);
+void fmd_computeLJ(fmd_t *md);
 
 #endif /* LJ_H */

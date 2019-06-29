@@ -66,11 +66,11 @@ typedef struct
     int hybridpasses[2];
 } potsys_t;
 
-typedef struct fmd_sys_t fmd_sys_t;
+typedef struct fmd_t fmd_t;
 
-void fmd_potsys_free(fmd_sys_t *sysp);
-void fmd_potsys_init(fmd_sys_t *sysp);
-void fmd_pot_prepareForForceComp(fmd_sys_t *sysp);
-void fmd_pot_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomkind2, fmd_pot_t *pot);
+void fmd_potsys_free(fmd_t *md);
+void fmd_potsys_init(fmd_t *md);
+void fmd_pot_prepareForForceComp(fmd_t *md);
+void fmd_pot_apply(fmd_t *md, unsigned atomkind1, unsigned atomkind2, fmd_pot_t *pot);
 
 #endif /* POTENTIAL_H */

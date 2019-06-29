@@ -55,11 +55,11 @@
             for ( (iv)[2]=(minv)[2]; (iv)[2]<(upv)[2]; (iv)[2]++ )
 
 #define SET_jc_IN_DIRECTION(dd)                                        \
-    if (sysp->ns[dd] == 1)                                             \
+    if (md->ns[dd] == 1)                                               \
     {                                                                  \
-        if ((kc[dd] == -1) || (kc[dd] == sysp->nc[dd]))                \
-            if (sysp->PBC[dd])                                         \
-                jc[dd] = (kc[dd] + sysp->nc[dd]) % sysp->nc[dd];       \
+        if ((kc[dd] == -1) || (kc[dd] == md->nc[dd]))                  \
+            if (md->PBC[dd])                                           \
+                jc[dd] = (kc[dd] + md->nc[dd]) % md->nc[dd];           \
             else                                                       \
                 continue;                                              \
         else                                                           \
@@ -150,11 +150,16 @@ typedef struct
 } TSubDomain;
 
 typedef enum
-    {scmXYZParticlesNum, scmXYZSeparate, scmCSV, scmVTF} fmd_SaveConfigMode_t;
+{
+    SCM_XYZ_PARTICLESNUM,
+    SCM_XYZ_SEPARATE,
+    SCM_CSV,
+    SCM_VTF
+} fmd_SaveConfigMode_t;
 
-typedef struct fmd_sys_t fmd_sys_t;
+typedef struct fmd_t fmd_t;
 
-struct fmd_sys_t
+struct fmd_t
 {
     TSubDomain subDomain;
     potsys_t potsys;
@@ -203,20 +208,20 @@ struct fmd_sys_t
 
 // Functions
 
-void fmd_subd_init(fmd_sys_t *sysp);
-void fmd_box_createGrid(fmd_sys_t *sysp, double cutoff);
-void fmd_dync_setBerendsenThermostatParameter(fmd_sys_t *sysp, double parameter);
+void fmd_subd_init(fmd_t *md);
+void fmd_box_createGrid(fmd_t *md, double cutoff);
+void fmd_dync_setBerendsenThermostatParameter(fmd_t *md, double parameter);
 void cleanGridSegment(TCell ***grid, int ic_from[3], int ic_to[3]);
-void compLocOrdParam(fmd_sys_t *sysp);
-void createCommunicators(fmd_sys_t *sysp);
+void compLocOrdParam(fmd_t *md);
+void createCommunicators(fmd_t *md);
 TCell ***createGrid(int cell_num[3]);
-void findLimits(fmd_sys_t *sysp, double lowerLimit[3], double upperLimit[3]);
+void findLimits(fmd_t *md, double lowerLimit[3], double upperLimit[3]);
 int getListLength(TParticleListItem *root_p);
-void identifyProcess(fmd_sys_t *sysp);
+void identifyProcess(fmd_t *md);
 void handleFileOpenError(FILE *fp, char *filename);
-void loadStateFile(fmd_sys_t *sysp, TCell ***global_grid);
-void rescaleVelocities(fmd_sys_t *sysp);
-void restoreBackups(fmd_sys_t *sysp);
+void loadStateFile(fmd_t *md, TCell ***global_grid);
+void rescaleVelocities(fmd_t *md);
+void restoreBackups(fmd_t *md);
 void insertInList(TParticleListItem **root_pp, TParticleListItem *item_p);
 void removeFromList(TParticleListItem **item_pp);
 

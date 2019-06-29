@@ -23,7 +23,7 @@
 #include "list.h"
 #include "forces.h"
 
-void fmd_computeLJ(fmd_sys_t *sysp)
+void fmd_computeLJ(fmd_t *md)
 {
     int jc[3], kc[3];
     int d;
@@ -31,19 +31,19 @@ void fmd_computeLJ(fmd_sys_t *sysp)
     double r2, rv[3];
     int ic0, ic1, ic2;
     double potEnergy = 0.0;
-    potpair_t **pottable = sysp->potsys.pottable;
+    potpair_t **pottable = md->potsys.pottable;
 
     // iterate over all cells(lists)
     #pragma omp parallel for private(ic0,ic1,ic2,item1_p,d,kc,jc,item2_p,rv,r2) \
-      shared(sysp,pottable) default(none) collapse(3) reduction(+:potEnergy) schedule(static,1)
-    for (ic0 = sysp->subDomain.ic_start[0]; ic0 < sysp->subDomain.ic_stop[0]; ic0++)
-        for (ic1 = sysp->subDomain.ic_start[1]; ic1 < sysp->subDomain.ic_stop[1]; ic1++)
-            for (ic2 = sysp->subDomain.ic_start[2]; ic2 < sysp->subDomain.ic_stop[2]; ic2++)
+      shared(md,pottable) default(none) collapse(3) reduction(+:potEnergy) schedule(static,1)
+    for (ic0 = md->subDomain.ic_start[0]; ic0 < md->subDomain.ic_stop[0]; ic0++)
+        for (ic1 = md->subDomain.ic_start[1]; ic1 < md->subDomain.ic_stop[1]; ic1++)
+            for (ic2 = md->subDomain.ic_start[2]; ic2 < md->subDomain.ic_stop[2]; ic2++)
             {
                 // iterate over all items in cell ic
-                for (item1_p = sysp->subDomain.grid[ic0][ic1][ic2]; item1_p != NULL; item1_p = item1_p->next_p)
+                for (item1_p = md->subDomain.grid[ic0][ic1][ic2]; item1_p != NULL; item1_p = item1_p->next_p)
                 {
-                    if (!(sysp->activeGroup == -1 || item1_p->P.groupID == sysp->activeGroup))
+                    if (!(md->activeGroup == -1 || item1_p->P.groupID == md->activeGroup))
                         continue;
 
                     unsigned atomkind1 = item1_p->P.elementID;
@@ -62,9 +62,9 @@ void fmd_computeLJ(fmd_sys_t *sysp)
                             {
                                 SET_jc_IN_DIRECTION(2)
                                 // iterate over all items in cell jc
-                                for (item2_p = sysp->subDomain.grid[jc[0]][jc[1]][jc[2]]; item2_p != NULL; item2_p = item2_p->next_p)
+                                for (item2_p = md->subDomain.grid[jc[0]][jc[1]][jc[2]]; item2_p != NULL; item2_p = item2_p->next_p)
                                 {
-                                    if (!(sysp->activeGroup == -1 || item2_p->P.groupID == sysp->activeGroup))
+                                    if (!(md->activeGroup == -1 || item2_p->P.groupID == md->activeGroup))
                                         continue;
 
                                     if (item1_p != item2_p)
@@ -103,10 +103,10 @@ void fmd_computeLJ(fmd_sys_t *sysp)
             }
 
     potEnergy *= 2.0;
-    MPI_Allreduce(&potEnergy, &sysp->totalPotentialEnergy, 1, MPI_DOUBLE, MPI_SUM, sysp->MD_comm);
+    MPI_Allreduce(&potEnergy, &md->totalPotentialEnergy, 1, MPI_DOUBLE, MPI_SUM, md->MD_comm);
 }
 
-fmd_pot_t *fmd_pot_lj_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomkind2,
+fmd_pot_t *fmd_pot_lj_apply(fmd_t *md, unsigned atomkind1, unsigned atomkind2,
                             double sigma, double epsilon, double cutoff)
 {
     LJ_6_12_t *lj = (LJ_6_12_t *)malloc(sizeof(LJ_6_12_t));
@@ -119,10 +119,10 @@ fmd_pot_t *fmd_pot_lj_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomki
     pot->data = lj;
 
     // add the pot to potlist
-    sysp->potsys.potlist = fmd_list_prepend(sysp->potsys.potlist, pot);
+    md->potsys.potlist = fmd_list_prepend(md->potsys.potlist, pot);
 
     // apply the pot
-    fmd_pot_apply(sysp, atomkind1, atomkind2, pot);
+    fmd_pot_apply(md, atomkind1, atomkind2, pot);
 
     return pot;
 }

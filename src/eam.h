@@ -192,9 +192,9 @@ struct eam_t
     int Nrho, Nr, Nr2;
 };
 
-void fmd_computeEAM_pass0(fmd_sys_t *sysp, double FembSum);
-void fmd_computeEAM_pass1(fmd_sys_t *sysp, double *FembSum_p);
-unsigned fmd_pot_eam_find_iloc(fmd_sys_t *sysp, eam_t *eam, unsigned atomkind);
+void fmd_computeEAM_pass0(fmd_t *md, double FembSum);
+void fmd_computeEAM_pass1(fmd_t *md, double *FembSum_p);
+unsigned fmd_pot_eam_find_iloc(fmd_t *md, eam_t *eam, unsigned atomkind);
 void fmd_pot_eam_free(eam_t *eam);
 
 #endif /* EAM_H */
