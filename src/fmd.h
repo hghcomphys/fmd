@@ -70,7 +70,7 @@ void fmd_pot_setAtomKinds(fmd_t *md, unsigned number, const fmd_string_t names[]
 fmd_pot_t *fmd_pot_lj_apply(fmd_t *md, unsigned atomkind1, unsigned atomkind2,
   double sigma, double epsilon, double cutoff);
 fmd_pot_t *fmd_pot_morse_apply(fmd_t *md, unsigned atomkind1, unsigned atomkind2,
-                               double D0, double alpha, double r0, double cutoff);
+  double D0, double alpha, double r0, double cutoff);
 void fmd_pot_apply(fmd_t *md, unsigned atomkind1, unsigned atomkind2, fmd_pot_t *pot);
 
 void fmd_subd_init(fmd_t *md);
