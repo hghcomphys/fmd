@@ -1,7 +1,7 @@
 # FMD - a classical molecular dynamics library
 
 <p align="center">
-  <img src="doc/images/readme1.jpg"{ width=30% }>
+  <img src="doc/images/readme01.gif">
 </p>
 
 ## About FMD
@@ -15,10 +15,10 @@ FMD is a growing project. At the moment, its features and capabilities include:
 - can create different structures of atoms (provided by PyFMD)
 - can be used in C and Python programs
 - can save atomic coordinates in [XYZ](https://en.wikipedia.org/wiki/XYZ_file_format), [VTF](https://github.com/olenz/vtfplugin/wiki/VTF-format)  and [CSV](https://en.wikipedia.org/wiki/Comma-separated_values) formats
-- supports EAM potentials for metals and alloys
+- supports EAM, Morse, and Lennard-Jones potentials
 - provides Berendsen thermostat
 - provides microcanonical NVE ensemble
-- provides checkpoints for continuing a simulation
+- can save checkpoints for continuing a simulation
 
 While all features of the core can be accessed via PyFMD, currently the core cannot directly use features which are added by PyFMD. So, for example, if you would like to work with a Body-Centered Cubic (bcc) structure in a C program, you have to create and save it with a small Python code which uses PyFMD, and then load the saved structure in your C program from your storage device.
 
