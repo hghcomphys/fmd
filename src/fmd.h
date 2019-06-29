@@ -1,7 +1,7 @@
 /*
   fmd.h: This file is part of Free Molecular Dynamics
 
-  Copyright (C) 2019 Arham Amouye Foumani
+  Copyright (C) 2019 Arham Amouye Foumani, Hossein Ghorbanfekr
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -22,57 +22,67 @@
 
 // types
 
-typedef struct fmdt_sys fmdt_sys;
+typedef struct fmd_sys_t fmd_sys_t;
+typedef struct fmd_pot_t fmd_pot_t;
 typedef enum
-    {scmXYZParticlesNum, scmXYZSeparate, scmCSV, scmVTF} fmdt_SaveConfigMode;
+    {scmXYZParticlesNum, scmXYZSeparate, scmCSV, scmVTF} fmd_SaveConfigMode_t;
+typedef char *fmd_string_t;
 
 // functions
 
-void fmd_matt_addVelocity(fmdt_sys *system, int groupID, double vx, double vy, double vz);
-void fmd_matt_setActiveGroup(fmdt_sys *system, int groupID);
-void fmd_matt_setDesiredTemperature(fmdt_sys *system, double DesiredTemperature);
-void fmd_matt_makeCuboidFCC(fmdt_sys *system, double x, double y, double z,
+void fmd_matt_addVelocity(fmd_sys_t *system, int groupID, double vx, double vy, double vz);
+void fmd_matt_setActiveGroup(fmd_sys_t *system, int groupID);
+void fmd_matt_setDesiredTemperature(fmd_sys_t *system, double DesiredTemperature);
+void fmd_matt_makeCuboidFCC(fmd_sys_t *system, double x, double y, double z,
   int dimx, int dimy, int dimz, double latticeParameter, int elementID, int groupID);
-void fmd_matt_saveConfiguration(fmdt_sys *system);
-double fmd_matt_getTotalEnergy(fmdt_sys *system);
-double fmd_matt_getGlobalTemperature(fmdt_sys *system);
-void fmd_matt_distribute(fmdt_sys *system);
-void fmd_matt_giveTemperature(fmdt_sys *system, int groupID);
+void fmd_matt_makeCuboidFCC_alloy(fmd_sys_t *system, double x, double y, double z,
+  int dimx, int dimy, int dimz, double latticeParameter, double *proportions, int groupID);
+void fmd_matt_saveConfiguration(fmd_sys_t *system);
+double fmd_matt_getTotalEnergy(fmd_sys_t *system);
+double fmd_matt_getGlobalTemperature(fmd_sys_t *system);
+void fmd_matt_distribute(fmd_sys_t *system);
+void fmd_matt_giveTemperature(fmd_sys_t *system, int groupID);
 
-void fmd_box_setPBC(fmdt_sys *system, int PBCx, int PBCy, int PBCz);
-void fmd_box_setSize(fmdt_sys *system, double sx, double sy, double sz);
-void fmd_box_setSubDomains(fmdt_sys *system, int dimx, int dimy, int dimz);
-void fmd_box_createGrid(fmdt_sys *system, double cutoff);
+void fmd_box_setPBC(fmd_sys_t *system, int PBCx, int PBCy, int PBCz);
+void fmd_box_setSize(fmd_sys_t *system, double sx, double sy, double sz);
+void fmd_box_setSubDomains(fmd_sys_t *system, int dimx, int dimy, int dimz);
+void fmd_box_createGrid(fmd_sys_t *system, double cutoff);
 
-void fmd_io_setSaveDirectory(fmdt_sys *system, char *directory);
-void fmd_io_setSaveConfigMode(fmdt_sys *system, fmdt_SaveConfigMode mode);
-void fmd_io_printf(fmdt_sys *system, const char * restrict format, ...);
-void fmd_io_loadState(fmdt_sys *system, char *file, int useTime);
-void fmd_io_saveState(fmdt_sys *system, char *filename);
+void fmd_io_setSaveDirectory(fmd_sys_t *system, char *directory);
+void fmd_io_setSaveConfigMode(fmd_sys_t *system, fmd_SaveConfigMode_t mode);
+void fmd_io_printf(fmd_sys_t *system, const char * restrict format, ...);
+void fmd_io_loadState(fmd_sys_t *system, char *filepath, int useTime);
+void fmd_io_saveState(fmd_sys_t *system, char *filename);
 
-void fmd_pot_eam_init(fmdt_sys *system, char *filePath);
-double fmd_pot_eam_getLatticeParameter(fmdt_sys *system, int element);
-double fmd_pot_eam_getCutoffRadius(fmdt_sys *system);
-void fmd_pot_eam_free(fmdt_sys *system);
-void fmd_pot_setCutoffRadius(fmdt_sys *system, double cutoff);
+fmd_pot_t *fmd_pot_eam_alloy_load(fmd_sys_t *system, char *filePath);
+double fmd_pot_eam_getLatticeParameter(fmd_sys_t *system, fmd_pot_t *pot, fmd_string_t element);
+double fmd_pot_eam_getCutoffRadius(fmd_sys_t *system, fmd_pot_t *pot);
+void fmd_pot_setCutoffRadius(fmd_sys_t *system, double cutoff);
+void fmd_pot_setAtomKinds(fmd_sys_t *system, unsigned number, const fmd_string_t names[], const double masses[]);
+fmd_pot_t *fmd_pot_lj_apply(fmd_sys_t *system, unsigned atomkind1, unsigned atomkind2,
+  double sigma, double epsilon, double cutoff);
+fmd_pot_t *fmd_pot_morse_apply(fmd_sys_t *sysp, unsigned atomkind1, unsigned atomkind2,
+                              double D0, double alpha, double r0, double cutoff);
+void fmd_pot_apply(fmd_sys_t *system, unsigned atomkind1, unsigned atomkind2, fmd_pot_t *pot);
 
-void fmd_subd_init(fmdt_sys *system);
-void fmd_subd_free(fmdt_sys *system);
+void fmd_subd_init(fmd_sys_t *system);
+void fmd_subd_free(fmd_sys_t *system);
 
-double fmd_proc_getWallTime(fmdt_sys *system);
-int fmd_proc_isMD(fmdt_sys *system);
+double fmd_proc_getWallTime(fmd_sys_t *system);
+int fmd_proc_isMD(fmd_sys_t *system);
 
-fmdt_sys *fmd_sys_create();
-void fmd_sys_free(fmdt_sys *system, int finalizeMPI);
+fmd_sys_t *fmd_sys_create();
+void fmd_sys_free(fmd_sys_t *system, int finalizeMPI);
 
-double fmd_dync_getTimeStep(fmdt_sys *system);
-void fmd_dync_setTimeStep(fmdt_sys *system, double timeStep);
-double fmd_dync_getTime(fmdt_sys *system);
-void fmd_dync_updateForces(fmdt_sys *system);
-void fmd_dync_incTime(fmdt_sys *system);
-void fmd_dync_setBerendsenThermostatParameter(fmdt_sys *system, double parameter);
-void fmd_dync_velocityVerlet_takeFirstStep(fmdt_sys *system, int useThermostat);
-int fmd_dync_velocityVerlet_takeLastStep(fmdt_sys *system);
-void fmd_dync_equilibrate(fmdt_sys *system, int groupID, double duration, double strength);
+double fmd_dync_getTimeStep(fmd_sys_t *system);
+void fmd_dync_setTimeStep(fmd_sys_t *system, double timeStep);
+double fmd_dync_getTime(fmd_sys_t *system);
+void fmd_dync_updateForces(fmd_sys_t *system);
+void fmd_dync_updateForcesLJ(fmd_sys_t *system);
+void fmd_dync_incTime(fmd_sys_t *system);
+void fmd_dync_setBerendsenThermostatParameter(fmd_sys_t *system, double parameter);
+void fmd_dync_velocityVerlet_takeFirstStep(fmd_sys_t *system, int useThermostat);
+int fmd_dync_velocityVerlet_takeLastStep(fmd_sys_t *system);
+void fmd_dync_equilibrate(fmd_sys_t *system, int groupID, double duration, double strength);
 
 #endif /* FMD_H */

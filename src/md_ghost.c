@@ -24,7 +24,7 @@
 #include "md_ghost.h"
 
 static void particles_migrate_in_direction_d(
-    fmdt_sys *sysp, int d, int ic_start_send_lower[3],
+    fmd_sys_t *sysp, int d, int ic_start_send_lower[3],
     int ic_stop_send_lower[3], int ic_start_receive_lower[3],
     int ic_stop_receive_lower[3], int ic_start_send_upper[3], int ic_stop_send_upper[3],
     int ic_start_receive_upper[3], int ic_stop_receive_upper[3])
@@ -302,7 +302,7 @@ static void particles_migrate_in_direction_d(
 }
 
 static void ghostparticles_init_in_direction_d(
-    fmdt_sys *sysp, int d, int ic_start_send_lower[3], int ic_stop_send_lower[3],
+    fmd_sys_t *sysp, int d, int ic_start_send_lower[3], int ic_stop_send_lower[3],
     int ic_start_receive_lower[3], int ic_stop_receive_lower[3], int ic_start_send_upper[3],
     int ic_stop_send_upper[3], int ic_start_receive_upper[3], int ic_stop_receive_upper[3])
 {
@@ -554,7 +554,7 @@ static void ghostparticles_init_in_direction_d(
 }
 
 static void ghostparticles_update_Fprime_in_direction_d(
-    fmdt_sys *sysp, int d, int ic_start_send_lower[3],
+    fmd_sys_t *sysp, int d, int ic_start_send_lower[3],
     int ic_stop_send_lower[3], int ic_start_receive_lower[3],
     int ic_stop_receive_lower[3], int ic_start_send_upper[3], int ic_stop_send_upper[3],
     int ic_start_receive_upper[3], int ic_stop_receive_upper[3])
@@ -684,7 +684,7 @@ static void ghostparticles_update_Fprime_in_direction_d(
 }
 
 static void ghostparticles_update_LocOrdParam_in_direction_d(
-    fmdt_sys *sysp, int d, int ic_start_send_lower[3],
+    fmd_sys_t *sysp, int d, int ic_start_send_lower[3],
     int ic_stop_send_lower[3], int ic_start_receive_lower[3],
     int ic_stop_receive_lower[3], int ic_start_send_upper[3], int ic_stop_send_upper[3],
     int ic_start_receive_upper[3], int ic_stop_receive_upper[3])
@@ -854,7 +854,7 @@ static void particles_prepare_migration_in_direction_d(
 }
 
 static void ghostparticles_prepare_init_update_in_direction_d(
-    fmdt_sys *sysp, int d, int ic_start_send_lower[3],
+    fmd_sys_t *sysp, int d, int ic_start_send_lower[3],
     int ic_stop_send_lower[3], int ic_start_receive_lower[3],
     int ic_stop_receive_lower[3], int ic_start_send_upper[3], int ic_stop_send_upper[3],
     int ic_start_receive_upper[3], int ic_stop_receive_upper[3])
@@ -899,7 +899,7 @@ static void ghostparticles_prepare_init_update_in_direction_d(
     }
 }
 
-void fmd_ghostparticles_update_LocOrdParam(fmdt_sys *sysp)
+void fmd_ghostparticles_update_LocOrdParam(fmd_sys_t *sysp)
 {
     int d;
     int ic_start_send_lower[3], ic_stop_send_lower[3];
@@ -925,7 +925,7 @@ void fmd_ghostparticles_update_LocOrdParam(fmdt_sys *sysp)
     }
 }
 
-void fmd_ghostparticles_update_Femb(fmdt_sys *sysp)
+void fmd_ghostparticles_update_Femb(fmd_sys_t *sysp)
 {
     int d;
     int ic_start_send_lower[3], ic_stop_send_lower[3];
@@ -951,7 +951,7 @@ void fmd_ghostparticles_update_Femb(fmdt_sys *sysp)
     }
 }
 
-void fmd_ghostparticles_init(fmdt_sys *sysp)
+void fmd_ghostparticles_init(fmd_sys_t *sysp)
 {
     int d;
     int ic_start_send_lower[3], ic_stop_send_lower[3];
@@ -977,7 +977,7 @@ void fmd_ghostparticles_init(fmdt_sys *sysp)
     }
 }
 
-void fmd_ghostparticles_delete(fmdt_sys *sysp)
+void fmd_ghostparticles_delete(fmd_sys_t *sysp)
 {
     int d;
     int ic_from[3], ic_to[3];
@@ -1000,7 +1000,7 @@ void fmd_ghostparticles_delete(fmdt_sys *sysp)
     }
 }
 
-void fmd_particles_migrate(fmdt_sys *sysp)
+void fmd_particles_migrate(fmd_sys_t *sysp)
 {
     int ic_start_send_lower[3], ic_stop_send_lower[3];
     int ic_start_send_upper[3], ic_stop_send_upper[3];

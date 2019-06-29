@@ -20,8 +20,7 @@
 #ifndef BASE_H
 #define BASE_H
 
-//#define NDEBUG
-#define USE_CSPLINE
+#include "config.h"
 
 #include <float.h>
 #include <stdio.h>
@@ -36,6 +35,7 @@
 #include <omp.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
+#include "potential.h"
 
 // Global macroes and symbolic constants
 
@@ -94,7 +94,7 @@
 #define ERROR_UNABLE_OPEN_FILE                  3
 #define ERROR_UNSUITABLE_FILE                   4
 
-// Typedefs
+// typedefs & structs
 
 typedef struct
 {
@@ -149,34 +149,15 @@ typedef struct
     int numberOfParticles;
 } TSubDomain;
 
-typedef struct
-{
-    double mass;
-    double latticeParameter;
-    double *F;
-    double *F_DD;
-    double *rho;
-    double *rhoDD;
-    double **phi;
-    double **phiDD;
-    char name[3];
-} TElement;
-
-typedef struct
-{
-    TElement *elements;
-    double drho, dr, dr2, cutoff;
-    int elementsNo;
-    int Nrho, Nr, Nr2;
-} TEAM;
-
 typedef enum
-    {scmXYZParticlesNum, scmXYZSeparate, scmCSV, scmVTF} TSaveConfigMode;
+    {scmXYZParticlesNum, scmXYZSeparate, scmCSV, scmVTF} fmd_SaveConfigMode_t;
 
-typedef struct
+typedef struct fmd_sys_t fmd_sys_t;
+
+struct fmd_sys_t
 {
     TSubDomain subDomain;
-    TEAM EAM;
+    potsys_t potsys;
     TCell ***global_grid;
     int globalGridExists;
     int boxSizeDetermined;
@@ -207,7 +188,7 @@ typedef struct
     double BerendsenThermostatParam;
     int iCompLocOrdParam;           // compute local order parameter?
     int locOrdParamPeriod;
-    TSaveConfigMode saveConfigMode;
+    fmd_SaveConfigMode_t saveConfigMode;
     FILE *configFilep;
     double wallTimeOrigin;
     int activeGroup;
@@ -218,24 +199,24 @@ typedef struct
     int _fileIndex;
     double _oldTotalMDEnergy;
     double _prevFailedMDEnergy;
-} fmdt_sys;
+};
 
 // Functions
 
-void fmd_subd_init(fmdt_sys *sysp);
-void fmd_box_createGrid(fmdt_sys *sysp, double cutoff);
-void fmd_dync_setBerendsenThermostatParameter(fmdt_sys *sysp, double parameter);
+void fmd_subd_init(fmd_sys_t *sysp);
+void fmd_box_createGrid(fmd_sys_t *sysp, double cutoff);
+void fmd_dync_setBerendsenThermostatParameter(fmd_sys_t *sysp, double parameter);
 void cleanGridSegment(TCell ***grid, int ic_from[3], int ic_to[3]);
-void compLocOrdParam(fmdt_sys *sysp);
-void createCommunicators(fmdt_sys *sysp);
+void compLocOrdParam(fmd_sys_t *sysp);
+void createCommunicators(fmd_sys_t *sysp);
 TCell ***createGrid(int cell_num[3]);
-void findLimits(fmdt_sys *sysp, double lowerLimit[3], double upperLimit[3]);
+void findLimits(fmd_sys_t *sysp, double lowerLimit[3], double upperLimit[3]);
 int getListLength(TParticleListItem *root_p);
-void identifyProcess(fmdt_sys *sysp);
+void identifyProcess(fmd_sys_t *sysp);
 void handleFileOpenError(FILE *fp, char *filename);
-void loadStateFile(fmdt_sys *sysp, TCell ***global_grid);
-void rescaleVelocities(fmdt_sys *sysp);
-void restoreBackups(fmdt_sys *sysp);
+void loadStateFile(fmd_sys_t *sysp, TCell ***global_grid);
+void rescaleVelocities(fmd_sys_t *sysp);
+void restoreBackups(fmd_sys_t *sysp);
 void insertInList(TParticleListItem **root_pp, TParticleListItem *item_p);
 void removeFromList(TParticleListItem **item_pp);
 

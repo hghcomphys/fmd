@@ -1,10 +1,11 @@
-"""PyFMD example
+"""PyFMD
 
-This example simulates fcc-copper crystal in NVT ensemble (350K).
+This example demonstrates an MD simulation of liquid Argon using Lennard-Jones potential.
+Beforehand, make sure that PyFMD is installed and properly linked to the FMD library file.
 
-How to execute:
+How to run:
 
-    $ mpirun -n 4 python <example.py>
+    $ mpirun -n 2 python 01_argon.py
 """
 
 import sys
@@ -14,14 +15,14 @@ from pyfmd import Calculator
 md = Calculator()
 
 # set size of the simulation box (in Angstrom) and periodic boundary conditions
-lattice_parameter = 3.6316
+lattice_parameter = 5.26
 md.box_size = 10*lattice_parameter, 10*lattice_parameter, 10*lattice_parameter
 
 # set periodic boundary conditions in three dimensions (False = no PBC)
-md.box_pbc = True, True, True
+# md.box_pbc = True, True, True  # (default)
 
 # partition the simulation box into subdomains for MPI-based parallel computation
-md.subdomains = (2, 2, 1)
+md.subdomains = (1, 2, 1)
 
 # sometimes the user launches more processes than the chosen number of subdomains; they're not needed here!
 # the function fmd_proc_isMD() can be called only after setting subdomains.
@@ -29,15 +30,19 @@ if not md.is_process_md:
     md.free_system(finalize_mpi=True)
     sys.exit()
 
-# load the EAM file into memory; can be called only after fmd_box_setSubDomains()
-md.init_potential("../potentials/Cu01.eam.alloy")
+# have only argon atoms
+md.set_potential_atom_kinds({'Ar': 39.948})  # atomic symbols and masses
 
-# get the EAM potential cutoff radius and define the box grid by using it
-cutoff = md.potential_cutoff
-md.set_box_grid(cutoff)
+# use a 12-6 Lennard-Jones potential for Argon atoms
+sigma, epsilon = 3.4, 0.0104
+cutoff = 2.5 * sigma
+md.apply_potential_lj(0, 0, sigma, epsilon, cutoff)
+
+# create the box grid
+md.create_box_grid(cutoff)
 
 # set the desired temperature (in Kelvin)
-md.desired_temperature = 350.0
+md.desired_temperature = 100.0  # default is 300K
 
 # make an fcc cuboid at a given position and with a given size
 md.make_cuboid_fcc((0, 0, 0), (10, 10, 10), lattice_parameter, 0, 0)
@@ -46,7 +51,7 @@ md.make_cuboid_fcc((0, 0, 0), (10, 10, 10), lattice_parameter, 0, 0)
 md.material_distribute()
 
 # set time step to 2 femtoseconds
-md.time_step = 0.002
+md.time_step = 0.002  # default is 0.001
 
 # set where to save output files (default = current directory)
 # md.io_directory = "../"
@@ -68,7 +73,7 @@ while md.time < final_step:
         md.save_io_config()
 
     # report some quantities every time step
-    # print (md.time, md.temperature, md.total_energy)
+    print (md.time, md.temperature, md.total_energy)
 
     # take first step of velocity Verlet integrator
     md.velocity_verlet_first_step(use_thermostat=True)  # NVT ensemble
@@ -89,4 +94,4 @@ md.save_io_state("state0.stt")
 print ("The run took about %.3f seconds to finish." % md.process_wall_time)
 
 # release memory taken for potential and fmd-system
-# del md
+del md

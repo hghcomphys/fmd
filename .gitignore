@@ -9,6 +9,7 @@
 pyfmd.egg-info/
 build/
 dist/
+fmdenv/
 
 # C
 *.so

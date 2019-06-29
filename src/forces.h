@@ -20,6 +20,28 @@
 #ifndef FORCES_H
 #define FORCES_H
 
-void fmd_dync_updateForces(fmdt_sys *sysp);
+#include "config.h"
+
+#define COMPUTE_rv_AND_r2                                                    \
+    for (d=0; d<3; d++)                                                      \
+    {                                                                        \
+        if (sysp->ns[d] == 1)                                                \
+        {                                                                    \
+            if (kc[d]==-1)                                                   \
+                rv[d] = item1_p->P.x[d] - item2_p->P.x[d] + sysp->l[d];      \
+            else                                                             \
+                if (kc[d] == sysp->nc[d])                                    \
+                    rv[d] = item1_p->P.x[d] - item2_p->P.x[d] - sysp->l[d];  \
+                else                                                         \
+                    rv[d] = item1_p->P.x[d] - item2_p->P.x[d];               \
+        }                                                                    \
+        else                                                                 \
+            rv[d] = item1_p->P.x[d] - item2_p->P.x[d];                       \
+    }                                                                        \
+    r2 = SQR(rv[0])+SQR(rv[1])+SQR(rv[2]);
+
+typedef struct fmd_sys_t fmd_sys_t;
+
+void fmd_dync_updateForces(fmd_sys_t *sysp);
 
 #endif /* FORCES_H */

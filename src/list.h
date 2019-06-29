@@ -1,7 +1,7 @@
 /*
-  md_ghost.h: This file is part of Free Molecular Dynamics
+  list.h: This file is part of Free Molecular Dynamics
 
-  Copyright (C) 2019 Arham Amouye Foumani
+  Copyright (C) 2019 Arham Amouye Foumani, Hossein Ghorbanfekr
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,15 +17,25 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef MD_GHOST_H
-#define MD_GHOST_H
+#ifndef LIST_H
+#define LIST_H
 
 #include "config.h"
 
-void fmd_ghostparticles_init(fmd_sys_t *sysp);
-void fmd_ghostparticles_update_Femb(fmd_sys_t *sysp);
-void fmd_ghostparticles_update_LocOrdParam(fmd_sys_t *sysp);
-void fmd_ghostparticles_delete(fmd_sys_t *sysp);
-void fmd_particles_migrate(fmd_sys_t *sysp);
+typedef int (*comparefunc_t)(const void *a, const void *b);
 
-#endif /* MD_GHOST_H */
+typedef struct list_t list_t;
+
+struct list_t
+{
+    void *data;
+    list_t *next;
+    list_t *prev;
+};
+
+list_t *fmd_list_prepend(list_t *list, void *data);
+unsigned fmd_list_length(list_t *list);
+list_t *fmd_list_find_custom(list_t *list, const void *data, comparefunc_t func);
+void fmd_list_free(list_t *list);
+
+#endif /* LIST_H */

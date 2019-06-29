@@ -17,7 +17,9 @@
 
 """FMD core library wrapper"""
 
+import sys
 import ctypes as ct
+from ctypes import ARRAY
 
 from .error import Error
 
@@ -35,14 +37,20 @@ class Calculator:
             self._lib_file = str(lib_file)
             self._lib = ct.CDLL(self._lib_file)  # load library file
             self._sys = self._create_system()
-            self._is_potential = False  # check a potential loaded is loaded
             self._dummy = 0  # dummy variable
         except:
             raise
 
+        # set defaults parameters
+        self.set_box_pbc()  # PBC box
+        self.set_subdomains()  # (1, 1, 1)
+        self.set_desired_temperature()  # T=300.0
+        self.set_time_step()  # 1fs
+        # self.exit_non_md_process()  # finalize_mpi=True
+        # self.set_io_config_mode()  # TODO: enum
+
     def __del__(self):
         """Release memory taken by fmd-system instance."""
-        self.free_potential()  # release memory taken by potential
         self.free_system()  # release memory taken by system
 
     # FMD-system instance pointer --------------------
@@ -67,32 +75,49 @@ class Calculator:
             self._lib.fmd_sys_free(self._sys, int(finalize_mpi))
             self._sys = None  # set None flag for fmd-system pointer
 
-    # Potential -----------------------------------------
-    def init_potential(self, file_name):
-        """Load the EAM file into memory."""
-        self._lib.fmd_pot_eam_init.argtypes = (ct.c_void_p, ct.c_char_p)
-        self._lib.fmd_pot_eam_init(self._sys_none, str(file_name).encode('utf-8'))
-        self._is_potential = True  # check a potential is loaded
-        return self
-
-    def free_potential(self):
-        """Release memory taken for potential."""
-        if self._is_potential:
-            self._lib.fmd_pot_eam_free.argtypes = (ct.c_void_p, ct.c_double)
-            self._lib.fmd_pot_eam_free(self._sys_none, self._dummy)
-            self._is_potential = False
-        return self
-
-    @property
-    def potential_cutoff(self):
+    def get_potential_cutoff(self, potential):
         """Get the potential cutoff radius."""
-        return self.get_potential_cutoff()
-
-    def get_potential_cutoff(self):
-        """Get the potential cutoff radius."""
-        self._lib.fmd_pot_eam_getCutoffRadius.argtypes = (ct.c_void_p, ct.c_double)
+        self._lib.fmd_pot_eam_getCutoffRadius.argtypes = (ct.c_void_p, ct.c_void_p)
         self._lib.fmd_pot_eam_getCutoffRadius.restype = ct.c_double
-        return self._lib.fmd_pot_eam_getCutoffRadius(self._sys_none, self._dummy)
+        return self._lib.fmd_pot_eam_getCutoffRadius(self._sys_none, potential)
+
+    def set_potential_atom_kinds(self, dict_names_masses):
+        """Set atom names and masses for setting potentials later."""
+        # check input lists
+        assert isinstance(dict_names_masses, dict), "Expected a dictionary for atomic names and masses!"
+        try:
+            number = len(dict_names_masses)
+            # array of names
+            self._lib.fmd_pot_setAtomKinds.argtypes = (
+            ct.c_void_p, ct.c_uint, ARRAY(ct.c_char_p, number), ARRAY(ct.c_double, number))
+            char_p_array_type = ct.c_char_p * number
+            c_names = char_p_array_type(*[ct.c_char_p(str(name).encode("utf-8")) for name in dict_names_masses.keys()])
+            # array of masses
+            double_array_type = ct.c_double * number
+            c_masses = double_array_type(*[float(mass) for mass in dict_names_masses.values()])
+            # call c_function
+            self._lib.fmd_pot_setAtomKinds(self._sys_none, number, c_names, c_masses)
+        except TypeError:
+            raise AssertionError("")  # TODO: error message
+        return self
+
+    def apply_potential_lj(self, atom_kind1, atom_kind2, sigma, epsilon, cutoff):
+        """Apply Lennard-Jones potential between the two given atom types."""
+        self._lib.fmd_pot_lj_apply.argtypes = (ct.c_void_p, ct.c_uint, ct.c_uint, ct.c_double, ct.c_double, ct.c_double)
+        self._lib.fmd_pot_lj_apply.restype = ct.c_void_p
+        return self._lib.fmd_pot_lj_apply(self._sys_none, atom_kind1, atom_kind2, sigma, epsilon, cutoff)
+
+    def load_potential_eam_alloy(self, filename):
+        """Load the EAM file into memory. It has to be called only after subdomains."""
+        self._lib.fmd_pot_eam_alloy_load.argtypes = (ct.c_void_p, ct.c_char_p)
+        self._lib.fmd_pot_eam_alloy_load.restype = ct.c_void_p
+        return self._lib.fmd_pot_eam_alloy_load(self._sys_none, str(filename).encode("utf-8"))
+
+    def apply_potential(self, atom_kind1, atom_kind2, potential):
+        """Apply the given potential between two atom kinds."""
+        self._lib.fmd_pot_apply.argtypes = (ct.c_void_p, ct.c_uint, ct.c_uint, ct.c_void_p)
+        self._lib.fmd_pot_apply(self._sys_none, atom_kind1, atom_kind2, potential)
+        return self
 
     # Box ----------------------------------------
     @property
@@ -122,14 +147,14 @@ class Calculator:
         """Set periodic boundary conditions in three dimensions."""
         self.set_box_pbc(pbc)
 
-    def set_box_pbc(self, pbc):
+    def set_box_pbc(self, pbc=(True, True, True)):
         """Set periodic boundary conditions in three dimensions."""
         pbc = Error.check_tuple(pbc, int)
         self._lib.fmd_box_setPBC.argtypes = (ct.c_void_p, ct.c_int, ct.c_int, ct.c_int)
         self._lib.fmd_box_setPBC(self._sys_none, pbc[0], pbc[1], pbc[2])
         return self
 
-    def set_box_grid(self, cutoff):
+    def create_box_grid(self, cutoff):
         """Create box grid."""
         self._lib.fmd_box_createGrid.argtypes = (ct.c_void_p, ct.c_double)
         self._lib.fmd_box_createGrid(self._sys_none, float(cutoff))
@@ -151,7 +176,7 @@ class Calculator:
         """Partition the simulation box into subdomains for MPI-based parallel computation."""
         self.set_subdomains(dim)
 
-    def set_subdomains(self, dim):
+    def set_subdomains(self, dim=(1, 1, 1)):
         """Partition the simulation box into subdomains for MPI-based parallel computation."""
         dim = Error.check_tuple(dim, Error.int_gt_zero)
         self._lib.fmd_box_setSubDomains.argtypes = (ct.c_void_p, ct.c_int, ct.c_int, ct.c_int)
@@ -183,6 +208,12 @@ class Calculator:
         self._lib.fmd_proc_getWallTime.restype = ct.c_double
         return self._lib.fmd_proc_getWallTime(self._sys_none, self._dummy)
 
+    # def exit_non_md_process(self, finalize_mpi=True):
+    #     """Exit process that is not involved in MD simulation."""
+    #     if not self.is_process_md:
+    #         self.free_system(finalize_mpi)
+    #         sys.exit()
+
     # Temperature ---------------------------------------
     @property
     def desired_temperature(self):
@@ -194,7 +225,7 @@ class Calculator:
         """Set the desired temperature (in Kelvin)."""
         self.set_desired_temperature(temperature)
 
-    def set_desired_temperature(self, temperature):
+    def set_desired_temperature(self, temperature=300.0):
         """Set the desired temperature (in Kelvin)."""
         self._lib.fmd_matt_setDesiredTemperature.argtypes = (ct.c_void_p, ct.c_double)
         self._lib.fmd_matt_setDesiredTemperature(self._sys_none, Error.float_gt_zero(temperature))
@@ -268,10 +299,10 @@ class Calculator:
         return self
 
     # Thermostat ------------------------------------------
-    def set_berendsen_thermostat_parameter(self, parameter=0.01):
+    def set_berendsen_thermostat_parameter(self, damp_parameter=0.01):
         """Set Berendsen thermostat parameter (in picoseconds)."""
         self._lib.fmd_dync_setBerendsenThermostatParameter.argtypes = (ct.c_void_p, ct.c_double)
-        self._lib.fmd_dync_setBerendsenThermostatParameter(self._sys_none, Error.float_gt_zero(parameter))
+        self._lib.fmd_dync_setBerendsenThermostatParameter(self._sys_none, Error.float_gt_zero(damp_parameter))
         return self
 
     # I/O -------------------------------------------------

@@ -1,5 +1,5 @@
 /*
-  md_ghost.h: This file is part of Free Molecular Dynamics
+  array.h: This file is part of Free Molecular Dynamics
 
   Copyright (C) 2019 Arham Amouye Foumani
 
@@ -17,15 +17,12 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef MD_GHOST_H
-#define MD_GHOST_H
+#ifndef ARRAY_H
+#define ARRAY_H
 
 #include "config.h"
 
-void fmd_ghostparticles_init(fmd_sys_t *sysp);
-void fmd_ghostparticles_update_Femb(fmd_sys_t *sysp);
-void fmd_ghostparticles_update_LocOrdParam(fmd_sys_t *sysp);
-void fmd_ghostparticles_delete(fmd_sys_t *sysp);
-void fmd_particles_migrate(fmd_sys_t *sysp);
+void **fmd_array_neat2d_create(unsigned dim1, unsigned dim2, unsigned elsize);
+void fmd_array_neat2d_free(void **array);
 
-#endif /* MD_GHOST_H */
+#endif /* ARRAY_H */

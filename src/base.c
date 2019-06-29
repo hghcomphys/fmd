@@ -27,7 +27,7 @@
 
 const int threeZeros[3] = {0, 0, 0};
 
-static void refreshGrid(fmdt_sys *sysp, int reverse);
+static void refreshGrid(fmd_sys_t *sysp, int reverse);
 
 void cleanGridSegment(TCell ***grid, int ic_from[3], int ic_to[3])
 {
@@ -47,8 +47,9 @@ void cleanGridSegment(TCell ***grid, int ic_from[3], int ic_to[3])
     }
 }
 
-void compLocOrdParam(fmdt_sys *sysp)
+void compLocOrdParam(fmd_sys_t *sysp)
 {
+/*
     float latticeParameter = sysp->EAM.elements[0].latticeParameter;
     float rCutSqd = SQR(1.32 * latticeParameter);
     int ic[3], jc[3], kc[3];
@@ -186,9 +187,10 @@ void compLocOrdParam(fmdt_sys *sysp)
         }
 
     sysp->LOPiteration = 0;
+*/
 }
 
-void fmd_dync_velocityVerlet_takeFirstStep(fmdt_sys *sysp, int useThermostat)
+void fmd_dync_velocityVerlet_takeFirstStep(fmd_sys_t *sysp, int useThermostat)
 {
     int ic[3];
     int d;
@@ -214,7 +216,7 @@ void fmd_dync_velocityVerlet_takeFirstStep(fmdt_sys *sysp, int useThermostat)
             }
 
             itemDestroyed = 0;
-            mass = sysp->EAM.elements[item_p->P.elementID].mass;
+            mass = sysp->potsys.atomkinds[item_p->P.elementID].mass;
 
             for (d=0; d<3; d++)
             {
@@ -251,7 +253,7 @@ void fmd_dync_velocityVerlet_takeFirstStep(fmdt_sys *sysp, int useThermostat)
     refreshGrid(sysp, 0);
 }
 
-int fmd_dync_velocityVerlet_takeLastStep(fmdt_sys *sysp)
+int fmd_dync_velocityVerlet_takeLastStep(fmd_sys_t *sysp)
 {
     int ic[3];
     int d;
@@ -296,7 +298,7 @@ int fmd_dync_velocityVerlet_takeLastStep(fmdt_sys *sysp)
                     if (!(sysp->activeGroup == -1 || item_p->P.groupID == sysp->activeGroup))
                         continue;
                     particlesNum++;
-                    mass = sysp->EAM.elements[item_p->P.elementID].mass;
+                    mass = sysp->potsys.atomkinds[item_p->P.elementID].mass;
                     for (d=0; d<3; d++)
                     {
                         item_p->P.v[d] += sysp->delta_t * 0.5 / mass * item_p->F[d];
@@ -352,7 +354,7 @@ int fmd_dync_velocityVerlet_takeLastStep(fmdt_sys *sysp)
 
 // not correct under periodic boundary conditions
 // see [J. Chem. Phys. 131, 154107 (2009)]
-double compVirial_internal(fmdt_sys *sysp)
+double compVirial_internal(fmd_sys_t *sysp)
 {
     int ic[3];
     TParticleListItem *item_p;
@@ -372,7 +374,7 @@ double compVirial_internal(fmdt_sys *sysp)
     return virial_global;
 }
 
-void createCommunicators(fmdt_sys *sysp)
+void createCommunicators(fmd_sys_t *sysp)
 {
     int mdnum, i;
     MPI_Group world_group, MD_group;
@@ -410,7 +412,7 @@ TCell ***createGrid(int cell_num[3])
     return grid;
 }
 
-void findLimits(fmdt_sys *sysp, double lowerLimit[3], double upperLimit[3])
+void findLimits(fmd_sys_t *sysp, double lowerLimit[3], double upperLimit[3])
 {
     TParticleListItem *item_p;
     int ic[3];
@@ -447,7 +449,7 @@ void freeGrid(TCell ***grid, int *cell_num)
     free(grid);
 }
 
-void fmd_subd_free(fmdt_sys *sysp)
+void fmd_subd_free(fmd_sys_t *sysp)
 {
     if (sysp->subDomain.grid != NULL)
     {
@@ -474,7 +476,7 @@ void handleFileOpenError(FILE *fp, char *filename)
     }
 }
 
-void identifyProcess(fmdt_sys *sysp)
+void identifyProcess(fmd_sys_t *sysp)
 {
     int mdnum;
 
@@ -491,12 +493,12 @@ void identifyProcess(fmdt_sys *sysp)
 #endif
 }
 
-void fmd_matt_setActiveGroup(fmdt_sys *sysp, int groupID)
+void fmd_matt_setActiveGroup(fmd_sys_t *sysp, int groupID)
 {
     sysp->activeGroup = groupID;
 }
 
-void fmd_matt_addVelocity(fmdt_sys *sysp, int groupID, double vx, double vy, double vz)
+void fmd_matt_addVelocity(fmd_sys_t *sysp, int groupID, double vx, double vy, double vz)
 {
     TCell ***grid;
     int *start, *stop;
@@ -531,7 +533,7 @@ void fmd_matt_addVelocity(fmdt_sys *sysp, int groupID, double vx, double vy, dou
             }
 }
 
-void fmd_matt_distribute(fmdt_sys *sysp)
+void fmd_matt_distribute(fmd_sys_t *sysp)
 {
     TParticleListItem *item_p;
     int i, k, d, nct, sum_length;
@@ -555,7 +557,7 @@ void fmd_matt_distribute(fmdt_sys *sysp)
         ITERATE(ic, threeZeros, sysp->nc)
             for (item_p=sysp->global_grid[ic[0]][ic[1]][ic[2]]; item_p != NULL; item_p = item_p->next_p)
             {
-                mass = sysp->EAM.elements[item_p->P.elementID].mass;
+                mass = sysp->potsys.atomkinds[item_p->P.elementID].mass;
                 for (d=0; d<3; d++)
                     m_vSqd_Sum += mass * SQR(item_p->P.v[d]);
             }
@@ -663,7 +665,7 @@ void fmd_matt_distribute(fmdt_sys *sysp)
     sysp->particlesDistributed = 1;
 }
 
-void fmd_subd_init(fmdt_sys *sysp)
+void fmd_subd_init(fmd_sys_t *sysp)
 {
     int d;
 
@@ -711,7 +713,7 @@ void insertInList(TParticleListItem **root_pp, TParticleListItem *item_p)
     *root_pp = item_p;
 }
 
-void fmd_io_loadState(fmdt_sys *sysp, char *file, int useTime)
+void fmd_io_loadState(fmd_sys_t *sysp, char *file, int useTime)
 {
     TParticleListItem *item_p;
     FILE *fp;
@@ -772,12 +774,13 @@ void fmd_io_loadState(fmdt_sys *sysp, char *file, int useTime)
         {
             item_p = (TParticleListItem *)malloc(sizeof(TParticleListItem));
             fscanf(fp, "%s%d", name, &item_p->P.groupID);
-            for (j=0; j < sysp->EAM.elementsNo; j++)
-                if (strcmp(name, sysp->EAM.elements[j].name) == 0)
+            for (j=0; j < sysp->potsys.atomkinds_num; j++)
+                if (strcmp(name, sysp->potsys.atomkinds[j].name) == 0)
                 {
                     item_p->P.elementID = j;
                     break;
                 }
+            // TO-DO: what if the name doesn't exist in potsys?
             fscanf(fp, "%lf%lf%lf", &item_p->P.x[0], &item_p->P.x[1], &item_p->P.x[2]);
             fscanf(fp, "%lf%lf%lf", &item_p->P.v[0], &item_p->P.v[1], &item_p->P.v[2]);
             for (d=0; d<3; d++)
@@ -788,7 +791,7 @@ void fmd_io_loadState(fmdt_sys *sysp, char *file, int useTime)
     }
 }
 
-static void refreshGrid(fmdt_sys *sysp, int reverse)
+static void refreshGrid(fmd_sys_t *sysp, int reverse)
 {
     int ic[3], jc[3];
     int d;
@@ -858,7 +861,7 @@ void removeFromList(TParticleListItem **item_pp)
     *item_pp = (*item_pp)->next_p;
 }
 
-void rescaleVelocities(fmdt_sys *sysp)
+void rescaleVelocities(fmd_sys_t *sysp)
 {
     int ic[3];
     int d;
@@ -874,7 +877,7 @@ void rescaleVelocities(fmdt_sys *sysp)
     sysp->globalTemperature = sysp->desiredTemperature;
 }
 
-void restoreBackups(fmdt_sys *sysp)
+void restoreBackups(fmd_sys_t *sysp)
 {
     int ic[3], d;
     TParticleListItem *item_p;
@@ -895,7 +898,7 @@ void restoreBackups(fmdt_sys *sysp)
 #endif
 }
 
-void fmd_matt_saveConfiguration(fmdt_sys *sysp)
+void fmd_matt_saveConfiguration(fmd_sys_t *sysp)
 {
     int ic[3];
     TParticleListItem *item_p;
@@ -984,7 +987,7 @@ void fmd_matt_saveConfiguration(fmdt_sys *sysp)
                 sprintf(configPath, "%s%05d.csv", sysp->saveDirectory, sysp->_fileIndex++);
                 sysp->configFilep = fopen(configPath, "w");
                 handleFileOpenError(sysp->configFilep, configPath);
-                for (i=0; i < sysp->EAM.elementsNo; i++)
+                for (i=0; i < sysp->potsys.atomkinds_num; i++)
                 {
                     for (k=0; k < sysp->totalNoOfParticles; k++)
                         if (globalData[k].elementID == i)
@@ -1000,18 +1003,18 @@ void fmd_matt_saveConfiguration(fmdt_sys *sysp)
                 sprintf(configPath, "%s%05d.vtf", sysp->saveDirectory, sysp->_fileIndex++);
                 sysp->configFilep = fopen(configPath, "w");
                 handleFileOpenError(sysp->configFilep, configPath);
-                for (i=0; i < sysp->EAM.elementsNo; i++)
+                for (i=0; i < sysp->potsys.atomkinds_num; i++)
                 {
                     int count = 0;
                     for (k=0; k < sysp->totalNoOfParticles; k++)
                         if (globalData[k].elementID == i)
                             count++;
                     fprintf(sysp->configFilep, "atom %d:%d\tname %s\n", atomID,
-                     atomID+count-1, sysp->EAM.elements[i].name);
+                     atomID+count-1, sysp->potsys.atomkinds[i].name);
                     atomID += count;
                 }
                 atomID = 0;
-                for (i=0; i < sysp->EAM.elementsNo; i++)
+                for (i=0; i < sysp->potsys.atomkinds_num; i++)
                 {
                     for (k=0; k < sysp->totalNoOfParticles; k++)
                         if (globalData[k].elementID == i)
@@ -1022,7 +1025,7 @@ void fmd_matt_saveConfiguration(fmdt_sys *sysp)
                         }
                 }
                 fprintf(sysp->configFilep, "timestep\n");
-                for (i=0; i < sysp->EAM.elementsNo; i++)
+                for (i=0; i < sysp->potsys.atomkinds_num; i++)
                 {
                     for (k=0; k < sysp->totalNoOfParticles; k++)
                         if (globalData[k].elementID == i)
@@ -1037,9 +1040,9 @@ void fmd_matt_saveConfiguration(fmdt_sys *sysp)
         if (sysp->saveConfigMode == scmXYZSeparate || sysp->saveConfigMode == scmXYZParticlesNum)
         {
             fprintf(sysp->configFilep, "%d\n\n", sysp->totalNoOfParticles);
-            for (i=0; i < sysp->EAM.elementsNo; i++)
+            for (i=0; i < sysp->potsys.atomkinds_num; i++)
             {
-                elementName = sysp->EAM.elements[i].name;
+                elementName = sysp->potsys.atomkinds[i].name;
                 for (k=0; k < sysp->totalNoOfParticles; k++)
                     if (globalData[k].elementID == i)
                         fprintf(sysp->configFilep, "%s\t%.2f\t%.2f\t%.2f\n",
@@ -1055,7 +1058,7 @@ void fmd_matt_saveConfiguration(fmdt_sys *sysp)
     }
 }
 
-void fmd_io_saveState(fmdt_sys *sysp, char *filename)
+void fmd_io_saveState(fmd_sys_t *sysp, char *filename)
 {
     TParticle *is_particles, *P_p;
     int *nums;
@@ -1083,7 +1086,7 @@ void fmd_io_saveState(fmdt_sys *sysp, char *filename)
         ITERATE(ic, sysp->subDomain.ic_start, sysp->subDomain.ic_stop)
             for (item_p = sysp->subDomain.grid[ic[0]][ic[1]][ic[2]]; item_p != NULL; item_p = item_p->next_p)
             {
-                fprintf(fp, "%s %d\n", sysp->EAM.elements[item_p->P.elementID].name, item_p->P.groupID);
+                fprintf(fp, "%s %d\n", sysp->potsys.atomkinds[item_p->P.elementID].name, item_p->P.groupID);
                 fprintf(fp, "%.16e\t%.16e\t%.16e\n", item_p->P.x[0], item_p->P.x[1], item_p->P.x[2]);
                 fprintf(fp, "%.16e\t%.16e\t%.16e\n", item_p->P.v[0], item_p->P.v[1], item_p->P.v[2]);
             }
@@ -1095,7 +1098,7 @@ void fmd_io_saveState(fmdt_sys *sysp, char *filename)
             for (k=0; k < nums[i]; k++)
             {
                 P_p = is_particles + k;
-                fprintf(fp, "%s %d\n", sysp->EAM.elements[P_p->elementID].name, P_p->groupID);
+                fprintf(fp, "%s %d\n", sysp->potsys.atomkinds[P_p->elementID].name, P_p->groupID);
                 fprintf(fp, "%.16e\t%.16e\t%.16e\n", P_p->x[0], P_p->x[1], P_p->x[2]);
                 fprintf(fp, "%.16e\t%.16e\t%.16e\n", P_p->v[0], P_p->v[1], P_p->v[2]);
             }
@@ -1119,12 +1122,12 @@ void fmd_io_saveState(fmdt_sys *sysp, char *filename)
     }
 }
 
-void fmd_matt_setDesiredTemperature(fmdt_sys *sysp, double desiredTemperature)
+void fmd_matt_setDesiredTemperature(fmd_sys_t *sysp, double desiredTemperature)
 {
     sysp->desiredTemperature = desiredTemperature;
 }
 
-void fmd_box_setPBC(fmdt_sys *sysp, int PBCx, int PBCy, int PBCz)
+void fmd_box_setPBC(fmd_sys_t *sysp, int PBCx, int PBCy, int PBCz)
 {
     sysp->PBC[0] = PBCx;
     sysp->PBC[1] = PBCy;
@@ -1132,7 +1135,7 @@ void fmd_box_setPBC(fmdt_sys *sysp, int PBCx, int PBCy, int PBCz)
     sysp->PBCdetermined = 1;
 }
 
-void fmd_box_setSubDomains(fmdt_sys *sysp, int dimx, int dimy, int dimz)
+void fmd_box_setSubDomains(fmd_sys_t *sysp, int dimx, int dimy, int dimz)
 {
     sysp->ns[0] = dimx;
     sysp->ns[1] = dimy;
@@ -1146,9 +1149,9 @@ void fmd_box_setSubDomains(fmdt_sys *sysp, int dimx, int dimy, int dimz)
     }
 }
 
-fmdt_sys *fmd_sys_create()
+fmd_sys_t *fmd_sys_create()
 {
-    fmdt_sys *sysp = (fmdt_sys *)malloc(sizeof(fmdt_sys));
+    fmd_sys_t *sysp = (fmd_sys_t *)malloc(sizeof(fmd_sys_t));
 
     int isMPIInitialized;
     MPI_Initialized(&isMPIInitialized);
@@ -1174,6 +1177,7 @@ fmdt_sys *fmd_sys_create()
     sysp->_fileIndex = 0;
     sysp->_oldTotalMDEnergy = 0.0;
     sysp->_prevFailedMDEnergy = 0.0;
+    fmd_potsys_init(sysp);
 
     // this must be the last statement before return
     sysp->wallTimeOrigin = MPI_Wtime();
@@ -1181,7 +1185,7 @@ fmdt_sys *fmd_sys_create()
     return sysp;
 }
 
-void fmd_box_setSize(fmdt_sys *sysp, double sx, double sy, double sz)
+void fmd_box_setSize(fmd_sys_t *sysp, double sx, double sy, double sz)
 {
     if (!sysp->globalGridExists)
     {
@@ -1192,17 +1196,17 @@ void fmd_box_setSize(fmdt_sys *sysp, double sx, double sy, double sz)
     }
 }
 
-double fmd_proc_getWallTime(fmdt_sys *sysp)
+double fmd_proc_getWallTime(fmd_sys_t *sysp)
 {
     return (MPI_Wtime() - sysp->wallTimeOrigin);
 }
 
-int fmd_proc_isMD(fmdt_sys *sysp)
+int fmd_proc_isMD(fmd_sys_t *sysp)
 {
     return sysp->isMDprocess;
 }
 
-void fmd_box_createGrid(fmdt_sys *sysp, double cutoff)
+void fmd_box_createGrid(fmd_sys_t *sysp, double cutoff)
 {
     int d;
 
@@ -1223,8 +1227,8 @@ void fmd_box_createGrid(fmdt_sys *sysp, double cutoff)
     sysp->cutoffRadius = cutoff;
 }
 
-void fmd_matt_makeCuboidFCC(fmdt_sys *sysp, double x, double y, double z,
-  int dimx, int dimy, int dimz, double latticeParameter, int elementID, int groupID)
+void fmd_matt_makeCuboidFCC_alloy(fmd_sys_t *sysp, double x, double y, double z,
+  int dimx, int dimy, int dimz, double latticeParameter, double *proportions, int groupID)
 {
     if (sysp->subDomain.myrank == MAINPROCESS(sysp->subDomain.numprocs))
     {
@@ -1238,30 +1242,43 @@ void fmd_matt_makeCuboidFCC(fmdt_sys *sysp, double x, double y, double z,
         double r0[3] = {x, y, z};
         int i, d;
 
-        gsl_rng *random_fast;
-        random_fast = gsl_rng_alloc(gsl_rng_rand);
-        gsl_rng_set(random_fast, time(NULL));
+        double *prps_cumult = (double *)malloc(sysp->potsys.atomkinds_num * sizeof(double));
+        double prps_sum = 0.0;
+        for (i=0; i < sysp->potsys.atomkinds_num; i++)
+            prps_cumult[i] = (prps_sum += proportions[i]);
+
+        gsl_rng *rng;
+        rng = gsl_rng_alloc(gsl_rng_mt19937);
+        gsl_rng_set(rng, time(NULL));
 
         int atomsNum = 4 * dimx * dimy * dimz;
-        mass = sysp->EAM.elements[elementID].mass;
-        stdDevVelocity = sqrt(K_BOLTZMANN * sysp->desiredTemperature / mass);
+
         ITERATE(crystalCell, threeZeros, dims)
             for (i=0; i<4; i++)
             {
                 item_p = (TParticleListItem *)malloc(sizeof(TParticleListItem));
-                item_p->P.elementID = elementID;
+
+                double rn = prps_sum * gsl_rng_uniform(rng);
+                int j;
+                for (j=0; j < sysp->potsys.atomkinds_num; j++)
+                    if (rn < prps_cumult[j]) break;
+                item_p->P.elementID = j;
+
+                mass = sysp->potsys.atomkinds[j].mass;
+                stdDevVelocity = sqrt(K_BOLTZMANN * sysp->desiredTemperature / mass);
+
                 item_p->P.groupID = -2;
                 for (d=0; d<3; d++)
                 {
                     item_p->P.x[d] = r0[d] + (crystalCell[d] + .25 + rFCC[i][d]) * latticeParameter;
-                    item_p->P.v[d] = gsl_ran_gaussian_ziggurat(random_fast, stdDevVelocity);
+                    item_p->P.v[d] = gsl_ran_gaussian_ziggurat(rng, stdDevVelocity);
                     momentumSum[d] += mass * item_p->P.v[d];
                     ic[d] = (int)floor(item_p->P.x[d] / sysp->cellh[d]);
                 }
                 insertInList(&sysp->global_grid[ic[0]][ic[1]][ic[2]], item_p);
             }
 
-        gsl_rng_free(random_fast);
+        gsl_rng_free(rng);
 
         ITERATE(ic, threeZeros, sysp->nc)
             for (item_p=sysp->global_grid[ic[0]][ic[1]][ic[2]]; item_p != NULL; item_p = item_p->next_p)
@@ -1275,40 +1292,53 @@ void fmd_matt_makeCuboidFCC(fmdt_sys *sysp, double x, double y, double z,
             }
 
         sysp->totalNoOfParticles += atomsNum;
+
+        free(prps_cumult);
     }
 }
 
-void fmd_io_setSaveDirectory(fmdt_sys *sysp, char *directory)
+void fmd_matt_makeCuboidFCC(fmd_sys_t *sysp, double x, double y, double z,
+  int dimx, int dimy, int dimz, double latticeParameter, int elementID, int groupID)
+{
+    double *proportions = (double *)calloc(sysp->potsys.atomkinds_num, sizeof(double));
+    proportions[elementID] = 1.0;
+
+    fmd_matt_makeCuboidFCC_alloy(sysp, x, y, z, dimx, dimy, dimz, latticeParameter, proportions, groupID);
+
+    free(proportions);
+}
+
+void fmd_io_setSaveDirectory(fmd_sys_t *sysp, char *directory)
 {
     strcpy(sysp->saveDirectory, directory);
 }
 
-void fmd_io_setSaveConfigMode(fmdt_sys *sysp, TSaveConfigMode mode)
+void fmd_io_setSaveConfigMode(fmd_sys_t *sysp, fmd_SaveConfigMode_t mode)
 {
     sysp->saveConfigMode = mode;
 }
 
-void fmd_dync_setTimeStep(fmdt_sys *sysp, double timeStep)
+void fmd_dync_setTimeStep(fmd_sys_t *sysp, double timeStep)
 {
     sysp->delta_t = timeStep;
 }
 
-double fmd_dync_getTimeStep(fmdt_sys *sysp)
+double fmd_dync_getTimeStep(fmd_sys_t *sysp)
 {
     return sysp->delta_t;
 }
 
-double fmd_dync_getTime(fmdt_sys *sysp)
+double fmd_dync_getTime(fmd_sys_t *sysp)
 {
     return sysp->mdTime;
 }
 
-void fmd_dync_incTime(fmdt_sys *sysp)
+void fmd_dync_incTime(fmd_sys_t *sysp)
 {
     sysp->mdTime += sysp->delta_t;
 }
 
-void fmd_dync_equilibrate(fmdt_sys *sysp, int groupID, double duration, double strength)
+void fmd_dync_equilibrate(fmd_sys_t *sysp, int groupID, double duration, double strength)
 {
     sysp->mdTime = 0.0;
     sysp->globalTemperature = sysp->desiredTemperature;
@@ -1335,7 +1365,7 @@ void fmd_dync_equilibrate(fmdt_sys *sysp, int groupID, double duration, double s
     sysp->mdTime = 0.0;
 }
 
-void fmd_io_printf(fmdt_sys *sysp, const char * restrict format, ...)
+void fmd_io_printf(fmd_sys_t *sysp, const char * restrict format, ...)
 {
     if (sysp->isMDprocess && sysp->subDomain.myrank == MAINPROCESS(sysp->subDomain.numprocs))
     {
@@ -1347,12 +1377,12 @@ void fmd_io_printf(fmdt_sys *sysp, const char * restrict format, ...)
     }
 }
 
-double fmd_matt_getTotalEnergy(fmdt_sys *sysp)
+double fmd_matt_getTotalEnergy(fmd_sys_t *sysp)
 {
     return sysp->totalKineticEnergy + sysp->totalPotentialEnergy;
 }
 
-void fmd_matt_giveTemperature(fmdt_sys *sysp, int groupID)
+void fmd_matt_giveTemperature(fmd_sys_t *sysp, int groupID)
 {
     TCell ***grid;
     int *start, *stop;
@@ -1387,7 +1417,7 @@ void fmd_matt_giveTemperature(fmdt_sys *sysp, int groupID)
         {
             if (groupID == -1 || groupID == item_p->P.groupID)
             {
-                double mass = sysp->EAM.elements[item_p->P.elementID].mass;
+                double mass = sysp->potsys.atomkinds[item_p->P.elementID].mass;
                 double stdDevVelocity = sqrt(K_BOLTZMANN * sysp->desiredTemperature / mass);
 
                 for (d=0; d<3; d++)
@@ -1398,19 +1428,20 @@ void fmd_matt_giveTemperature(fmdt_sys *sysp, int groupID)
     gsl_rng_free(rng);
 }
 
-double fmd_matt_getGlobalTemperature(fmdt_sys *sysp)
+double fmd_matt_getGlobalTemperature(fmd_sys_t *sysp)
 {
     return sysp->globalTemperature;
 }
 
-void fmd_dync_setBerendsenThermostatParameter(fmdt_sys *sysp, double parameter)
+void fmd_dync_setBerendsenThermostatParameter(fmd_sys_t *sysp, double parameter)
 {
     sysp->BerendsenThermostatParam = parameter;
 }
 
-void fmd_sys_free(fmdt_sys *sysp, int finalizeMPI)
+void fmd_sys_free(fmd_sys_t *sysp, int finalizeMPI)
 {
     fmd_subd_free(sysp);
+    fmd_potsys_free(sysp);
     free(sysp);
     if (finalizeMPI)
     {

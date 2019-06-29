@@ -1,5 +1,5 @@
 /*
-  md_ghost.h: This file is part of Free Molecular Dynamics
+  config.h: This file is part of Free Molecular Dynamics
 
   Copyright (C) 2019 Arham Amouye Foumani
 
@@ -17,15 +17,10 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef MD_GHOST_H
-#define MD_GHOST_H
+#ifndef CONFIG_H
+#define CONFIG_H
 
-#include "config.h"
+//#define NDEBUG
+#define USE_CSPLINE
 
-void fmd_ghostparticles_init(fmd_sys_t *sysp);
-void fmd_ghostparticles_update_Femb(fmd_sys_t *sysp);
-void fmd_ghostparticles_update_LocOrdParam(fmd_sys_t *sysp);
-void fmd_ghostparticles_delete(fmd_sys_t *sysp);
-void fmd_particles_migrate(fmd_sys_t *sysp);
-
-#endif /* MD_GHOST_H */
+#endif /* CONFIG_H */

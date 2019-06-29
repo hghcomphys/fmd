@@ -1,11 +1,11 @@
-/* Assuming that FMD is already compiled in src directory, this example
+/* Assuming that FMD is already compiled in the src directory, this example
    can be compiled with the following command:
 
-   $ gcc example1.c -L../src/  -Wl,-R../src/ -lfmd -lm -O3 -o example1.x
+   $ gcc 01_argon.c -L../src/ -Wl,-R../src/ -lfmd -lm -O3 -o 01_argon.x
 
    and can be executed by
 
-   $ mpirun -n 2 ./example1.x
+   $ mpirun -n 2 ./01_argon.x
 */
 
 #include <math.h>
@@ -13,13 +13,13 @@
 
 int main(int argc, char *argv[])
 {
-    fmdt_sys *sys;
+    fmd_sys_t *sys;
 
     // create an fmd-system instance
     sys = fmd_sys_create();
 
     // set size of the simulation box (in Angstrom)
-    double latticeParameter = 3.6316;
+    double latticeParameter = 5.26;
     fmd_box_setSize(sys, 10*latticeParameter, 10*latticeParameter, 10*latticeParameter);
 
     // set periodic boundary conditions in three dimensions (0 = no PBC)
@@ -36,15 +36,25 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    // load the EAM file into memory; can be called only after fmd_box_setSubDomains()
-    fmd_pot_eam_init(sys, "../potentials/Cu01.eam.alloy");
+    // let's have only argon atoms
+    fmd_string_t name[1] = {"Ar"};
+    double mass[1] = {39.948};
+    fmd_pot_setAtomKinds(sys, 1, name, mass);
 
-    // get the EAM potential cutoff radius and create the box grid by using it
-    double cutoff = fmd_pot_eam_getCutoffRadius(sys);
+    // use a 12-6 Lennard-Jones potential for Argon atoms
+    double sigma = 3.4, epsilon = 0.0104;
+    double cutoff = 2.5 * sigma;
+    fmd_pot_lj_apply(sys, 0, 0, sigma, epsilon, cutoff);
+
+    // Here you can use a Morse potential for Argon atoms instead
+    //double D0 = 0.010177, alpha = 1.253, r0 = 4.13, cutoff = 8.5;
+    //fmd_pot_morse_apply(sys, 0, 0, D0, alpha, r0, cutoff);
+
+    // create the box grid
     fmd_box_createGrid(sys, cutoff);
 
     // set the desired temperature (in Kelvin)
-    fmd_matt_setDesiredTemperature(sys, 350.0);
+    fmd_matt_setDesiredTemperature(sys, 100.0);
 
     // make an fcc cuboid at a given position and with a given size
     fmd_matt_makeCuboidFCC(sys, 0.0, 0.0, 0.0, 10, 10, 10, latticeParameter, 0, 0);
@@ -55,8 +65,8 @@ int main(int argc, char *argv[])
     // set time step to 2 femtoseconds
     fmd_dync_setTimeStep(sys, 2e-3);
 
-    // let us simulate for 2 picoseconds
-    double final_time = 2.0;
+    // let us simulate for 1.0 picoseconds
+    double final_time = 1.0;
 
     // set where to save output files (default = current directory)
     //fmd_io_setSaveDirectory(sys, "output/");
@@ -99,9 +109,6 @@ int main(int argc, char *argv[])
 
     // save system's final state in a file
     fmd_io_saveState(sys, "state0.stt");
-
-    // release memory taken for EAM potential
-    fmd_pot_eam_free(sys);
 
     // another report
     fmd_io_printf(sys, "The run took about %.3f seconds to finish.\n", fmd_proc_getWallTime(sys));
