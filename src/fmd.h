@@ -55,7 +55,7 @@ void fmd_io_loadState(fmd_sys_t *system, char *filepath, int useTime);
 void fmd_io_saveState(fmd_sys_t *system, char *filename);
 
 fmd_pot_t *fmd_pot_eam_alloy_load(fmd_sys_t *system, char *filePath);
-double fmd_pot_eam_getLatticeParameter(fmd_sys_t *system, int element);
+double fmd_pot_eam_getLatticeParameter(fmd_sys_t *system, fmd_pot_t *pot, fmd_string_t element);
 double fmd_pot_eam_getCutoffRadius(fmd_sys_t *system, fmd_pot_t *pot);
 void fmd_pot_setCutoffRadius(fmd_sys_t *system, double cutoff);
 void fmd_pot_setAtomKinds(fmd_sys_t *system, unsigned number, const fmd_string_t names[], const double masses[]);

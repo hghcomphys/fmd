@@ -397,10 +397,17 @@ void fmd_pot_eam_free(eam_t *eam)
     free(eam);
 }
 
-double fmd_pot_eam_getLatticeParameter(fmd_sys_t *sysp, int element)
+double fmd_pot_eam_getLatticeParameter(fmd_sys_t *sysp, fmd_pot_t *pot, fmd_string_t element)
 {
-    // TO-DO
-    //return eam->elements[element].latticeParameter;
+    // TO-DO: handle error
+    assert(pot->kind == POTKIND_EAM_ALLOY);
+
+    eam_t *eam = (eam_t *)(pot->data);
+    for (unsigned i=0; i < eam->elementsNo; i++)
+        if (strcmp(element, eam->elements[i].name) == 0)
+            return eam->elements[i].latticeParameter;
+
+    // TO-DO: if element is not found in the potential, notify the library user
 }
 
 unsigned fmd_pot_eam_find_iloc(fmd_sys_t *sysp, eam_t *eam, unsigned atomkind)
