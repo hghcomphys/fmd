@@ -10,10 +10,10 @@ with open("README.md", "r") as fh:
 
 setup(
     name='pyfmd',
-#    version='beta',
+#    version='0.1',
     description='PyFMD provides an object-oriented interface for interacting with the core part of FMD.',
     license='GNU GPL v3',
-#    url='',
+    url='https://github.com/a-amouei/fmd',
     keywords="fmd molecular-dynamics physics",
     platforms=['Unix'],
     long_description=long_description,
