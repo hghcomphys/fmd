@@ -12,6 +12,10 @@ script: pytest
 
 branches:
   only:
-  - master
   - develop
+  - master
+
+notifications:
+  email: false
+
 
