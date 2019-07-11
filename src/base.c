@@ -313,7 +313,7 @@ int fmd_dync_velocityVerlet_takeLastStep(fmd_t *md)
                 }
     }
     MPI_Reduce(momentumSum, md->totalMomentum, 3, MPI_DOUBLE, MPI_SUM,
-               MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
+               ROOTPROCESS(md->subDomain.numprocs), md->MD_comm);
     MPI_Allreduce(&particlesNum, &(md->activeGroupParticlesNum), 1, MPI_INT, MPI_SUM, md->MD_comm);
 
     if (md->activeGroup == -1)
@@ -329,13 +329,13 @@ int fmd_dync_velocityVerlet_takeLastStep(fmd_t *md)
         {
             if (md->_prevFailedMDEnergy!=0. && fabs((md->totalMDEnergy-md->_prevFailedMDEnergy)/md->_prevFailedMDEnergy) < md->autoStepSensitivity)
             {  // was jump in energy due to escape of some energetic particle(s) from simulation box?
-                if (md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
+                if (md->isRootProcess)
                     printf("Maybe the jump was caused by departure of some energetic particle(s). Increasing time step...\n");
                 returnVal = 2;
             }
             else
             {
-                if (md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
+                if (md->isRootProcess)
                 {
                     printf("current delta_t = %e\n", md->delta_t);
                     printf("Jump in total MD energy (old=%e new=%e)! Decreasing time step...\n", md->_oldTotalMDEnergy, md->totalMDEnergy);
@@ -369,7 +369,7 @@ double compVirial_internal(fmd_t *md)
                       item_p->P.x[2] * item_p->F[2];
         }
     MPI_Reduce(&virial, &virial_global, 1, MPI_DOUBLE, MPI_SUM,
-      MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
+      ROOTPROCESS(md->subDomain.numprocs), md->MD_comm);
 
     return virial_global;
 }
@@ -514,7 +514,7 @@ void fmd_matt_addVelocity(fmd_t *md, int groupID, double vx, double vy, double v
     else
     {
         start = threeZeros;
-        if (md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
+        if (md->isRootProcess)
         {
             grid = md->global_grid;
             stop = md->nc;
@@ -542,7 +542,7 @@ void fmd_matt_distribute(fmd_t *md)
 
     if (md->subDomain.grid == NULL) fmd_subd_init(md);
 
-    if (md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
+    if (md->isRootProcess)
     {
         int r, w;
         int is[3], global_icstart[3], global_icstop[3];
@@ -563,7 +563,7 @@ void fmd_matt_distribute(fmd_t *md)
             }
         md->globalTemperature = m_vSqd_Sum / (3.0 * md->totalNoOfParticles * K_BOLTZMANN);
 
-        for (i=0; i < MAINPROCESS(md->subDomain.numprocs); i++)
+        for (i=0; i < ROOTPROCESS(md->subDomain.numprocs); i++)
         {
             INVERSEINDEX(i, md->ns, is);
             nct = 1;
@@ -633,13 +633,13 @@ void fmd_matt_distribute(fmd_t *md)
         for (d=0; d<3; d++)
             nct *= md->subDomain.ic_stop[d] - md->subDomain.ic_start[d];
         ic_length = (int *)malloc((nct+1) * sizeof(int));
-        MPI_Recv(ic_length, nct+1, MPI_INT, MAINPROCESS(md->subDomain.numprocs),
+        MPI_Recv(ic_length, nct+1, MPI_INT, ROOTPROCESS(md->subDomain.numprocs),
                  50, md->MD_comm, &status);
         md->subDomain.numberOfParticles = sum_length = ic_length[nct];
         sum_length *= sizeof(TParticle);
         is_particles = (TParticle *)malloc(sum_length);
         MPI_Recv(is_particles, sum_length, MPI_CHAR,
-                 MAINPROCESS(md->subDomain.numprocs), 51, md->MD_comm, &status);
+                 ROOTPROCESS(md->subDomain.numprocs), 51, md->MD_comm, &status);
         kreceive = k = 0;
         ITERATE(ic, md->subDomain.ic_start, md->subDomain.ic_stop)
         {
@@ -655,9 +655,9 @@ void fmd_matt_distribute(fmd_t *md)
         free(is_particles);
     }
 
-    MPI_Bcast(&md->totalNoOfParticles, 1, MPI_DOUBLE, MAINPROCESS(md->subDomain.numprocs),
+    MPI_Bcast(&md->totalNoOfParticles, 1, MPI_DOUBLE, ROOTPROCESS(md->subDomain.numprocs),
               md->MD_comm);
-    MPI_Bcast(&md->globalTemperature, 1, MPI_DOUBLE, MAINPROCESS(md->subDomain.numprocs),
+    MPI_Bcast(&md->globalTemperature, 1, MPI_DOUBLE, ROOTPROCESS(md->subDomain.numprocs),
               md->MD_comm);
 
     md->totalKineticEnergy = 3.0/2.0 * md->totalNoOfParticles * K_BOLTZMANN * md->globalTemperature;
@@ -725,7 +725,7 @@ void fmd_io_loadState(fmd_t *md, fmd_string_t file, int useTime)
     double l0, l1, l2;
     int PBC0, PBC1, PBC2;
 
-    if (md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
+    if (md->isRootProcess)
     {
         fp = fopen(file, "r");
         handleFileOpenError(fp, file);
@@ -740,25 +740,25 @@ void fmd_io_loadState(fmd_t *md, fmd_string_t file, int useTime)
 
     if (!md->boxSizeDetermined)
     {
-        if (md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
+        if (md->isRootProcess)
         {
             md->l[0] = l0;
             md->l[1] = l1;
             md->l[2] = l2;
         }
-        MPI_Bcast(&md->l, 3, MPI_DOUBLE, MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
+        MPI_Bcast(&md->l, 3, MPI_DOUBLE, ROOTPROCESS(md->subDomain.numprocs), md->MD_comm);
         md->boxSizeDetermined = 1;
     }
 
     if (!md->PBCdetermined)
     {
-        if (md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
+        if (md->isRootProcess)
         {
             md->PBC[0] = PBC0;
             md->PBC[1] = PBC1;
             md->PBC[2] = PBC2;
         }
-        MPI_Bcast(&md->PBC, 3, MPI_INT, MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
+        MPI_Bcast(&md->PBC, 3, MPI_INT, ROOTPROCESS(md->subDomain.numprocs), md->MD_comm);
         md->PBCdetermined = 1;
     }
 
@@ -766,9 +766,9 @@ void fmd_io_loadState(fmd_t *md, fmd_string_t file, int useTime)
         fmd_box_createGrid(md, md->cutoffRadius);
 
     if (useTime)
-        MPI_Bcast(&md->mdTime, 1, MPI_DOUBLE, MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
+        MPI_Bcast(&md->mdTime, 1, MPI_DOUBLE, ROOTPROCESS(md->subDomain.numprocs), md->MD_comm);
 
-    if (md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
+    if (md->isRootProcess)
     {
         for (i=0; i < particlesNum; i++)
         {
@@ -935,7 +935,7 @@ void fmd_matt_saveConfiguration(fmd_t *md)
     for (k=0; k < md->subDomain.numprocs; k++)
         md->totalNoOfParticles += nums[k];
 
-    if (md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
+    if (md->isRootProcess)
     {
         int displ = 0;
 
@@ -951,11 +951,11 @@ void fmd_matt_saveConfiguration(fmd_t *md)
     }
     free(nums);
     MPI_Gatherv(localData, md->subDomain.numberOfParticles * sizeof(TXYZ_Struct), MPI_CHAR,
-        globalData, recvcounts, displs, MPI_CHAR, MAINPROCESS(md->subDomain.numprocs),
+        globalData, recvcounts, displs, MPI_CHAR, ROOTPROCESS(md->subDomain.numprocs),
         md->MD_comm);
     free(localData);
 
-    if (md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
+    if (md->isRootProcess)
     {
         char configPath[MAX_PATH_LENGTH];
         char *elementName;
@@ -1068,11 +1068,11 @@ void fmd_io_saveState(fmd_t *md, fmd_string_t filename)
     FILE *fp;
     MPI_Status status;
 
-    if (md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
+    if (md->isRootProcess)
     {
         nums = (int *)malloc(md->subDomain.numprocs * sizeof(int));
         MPI_Gather(&md->subDomain.numberOfParticles, 1, MPI_INT, nums, 1, MPI_INT,
-            MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
+            ROOTPROCESS(md->subDomain.numprocs), md->MD_comm);
         md->totalNoOfParticles = 0;
         for (k=0; k < md->subDomain.numprocs; k++)
             md->totalNoOfParticles += nums[k];
@@ -1090,7 +1090,7 @@ void fmd_io_saveState(fmd_t *md, fmd_string_t filename)
                 fprintf(fp, "%.16e\t%.16e\t%.16e\n", item_p->P.x[0], item_p->P.x[1], item_p->P.x[2]);
                 fprintf(fp, "%.16e\t%.16e\t%.16e\n", item_p->P.v[0], item_p->P.v[1], item_p->P.v[2]);
             }
-        for (i=0; i < MAINPROCESS(md->subDomain.numprocs); i++)
+        for (i=0; i < ROOTPROCESS(md->subDomain.numprocs); i++)
         {
             is_particles = (TParticle *)malloc(nums[i] * sizeof(TParticle));
             MPI_Recv(is_particles, nums[i] * sizeof(TParticle), MPI_CHAR, i, 150,
@@ -1110,14 +1110,14 @@ void fmd_io_saveState(fmd_t *md, fmd_string_t filename)
     else
     {
         MPI_Gather(&md->subDomain.numberOfParticles, 1, MPI_INT, nums, 1, MPI_INT,
-            MAINPROCESS(md->subDomain.numprocs), md->MD_comm);
+            ROOTPROCESS(md->subDomain.numprocs), md->MD_comm);
         is_particles = (TParticle *)malloc(md->subDomain.numberOfParticles * sizeof(TParticle));
         k = 0;
         ITERATE(ic, md->subDomain.ic_start, md->subDomain.ic_stop)
             for (item_p = md->subDomain.grid[ic[0]][ic[1]][ic[2]]; item_p != NULL; item_p = item_p->next_p)
                 is_particles[k++] = item_p->P;
         MPI_Send(is_particles, md->subDomain.numberOfParticles * sizeof(TParticle), MPI_CHAR,
-            MAINPROCESS(md->subDomain.numprocs), 150, md->MD_comm);
+            ROOTPROCESS(md->subDomain.numprocs), 150, md->MD_comm);
         free(is_particles);
     }
 }
@@ -1146,6 +1146,8 @@ void fmd_box_setSubDomains(fmd_t *md, int dimx, int dimy, int dimz)
     {
         MPI_Comm_size(md->MD_comm, &md->subDomain.numprocs);
         MPI_Comm_rank(md->MD_comm, &md->subDomain.myrank);
+        if (md->subDomain.myrank == ROOTPROCESS(md->subDomain.numprocs))
+            md->isRootProcess = 1;
     }
 }
 
@@ -1173,6 +1175,7 @@ fmd_t *fmd_sys_create()
     md->globalGridExists = 0;
     md->boxSizeDetermined = 0;
     md->PBCdetermined = 0;
+    md->isRootProcess = 0;
     md->_oldNumberOfParticles = -1;
     md->_fileIndex = 0;
     md->_oldTotalMDEnergy = 0.0;
@@ -1221,7 +1224,7 @@ void fmd_box_createGrid(fmd_t *md, double cutoff)
         md->cellh[d] = md->l[d] / md->nc[d];
     }
 
-    if (md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
+    if (md->isRootProcess)
         md->global_grid = createGrid(md->nc);
     md->globalGridExists = 1;
     md->cutoffRadius = cutoff;
@@ -1230,7 +1233,7 @@ void fmd_box_createGrid(fmd_t *md, double cutoff)
 void fmd_matt_makeCuboidFCC_alloy(fmd_t *md, double x, double y, double z,
   int dimx, int dimy, int dimz, double latticeParameter, double *proportions, int groupID)
 {
-    if (md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
+    if (md->isRootProcess)
     {
         double mass, stdDevVelocity;
         int crystalCell[3], ic[3];
@@ -1367,7 +1370,7 @@ void fmd_dync_equilibrate(fmd_t *md, int groupID, double duration, double streng
 
 void fmd_io_printf(fmd_t *md, const fmd_string_t restrict format, ...)
 {
-    if (md->isMDprocess && md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
+    if (md->isMDprocess && md->isRootProcess)
     {
         va_list argptr;
 
@@ -1398,7 +1401,7 @@ void fmd_matt_giveTemperature(fmd_t *md, int groupID)
     else
     {
         start = threeZeros;
-        if (md->subDomain.myrank == MAINPROCESS(md->subDomain.numprocs))
+        if (md->isRootProcess)
         {
             grid = md->global_grid;
             stop = md->nc;

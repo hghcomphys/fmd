@@ -68,7 +68,7 @@
     else                                                               \
         jc[dd] = kc[dd];
 
-#define MAINPROCESS(numprocs)   ((numprocs) - 1)
+#define ROOTPROCESS(numprocs)       ((numprocs) - 1)
 #define K_BOLTZMANN                 8.6173303e-5       // (eV / Kelvin)
 #define VACUUM_PERMITTIVITY         1.4185972718e-16   // (amp^2 ps^4 / mass_unit ang^3)
 #define LIGHT_SPEED                 2.9979245800e+06   // (ang / ps)
@@ -173,6 +173,7 @@ struct fmd_t
     int totalNoOfParticles;
     double globalTemperature;
     int isMDprocess;
+    int isRootProcess;
     int LOPiteration;               // must be initialized with zero
     MPI_Comm MD_comm;
     double totalKineticEnergy;
