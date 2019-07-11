@@ -78,6 +78,7 @@ void fmd_subd_free(fmd_t *md);
 
 double fmd_proc_getWallTime(fmd_t *md);
 int fmd_proc_isMD(fmd_t *md);
+int fmd_proc_isRoot(fmd_t *md);
 
 fmd_t *fmd_sys_create();
 void fmd_sys_free(fmd_t *md, int finalizeMPI);

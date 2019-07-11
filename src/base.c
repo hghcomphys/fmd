@@ -1209,6 +1209,11 @@ int fmd_proc_isMD(fmd_t *md)
     return md->isMDprocess;
 }
 
+int fmd_proc_isRoot(fmd_t *md)
+{
+    return md->isRootProcess;
+}
+
 void fmd_box_createGrid(fmd_t *md, double cutoff)
 {
     int d;
