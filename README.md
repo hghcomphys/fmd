@@ -43,19 +43,17 @@ This compiles the core and makes `libfmd.so` in the `src` directory. This binary
 
 Requirements:
 
-- [numpy](https://www.numpy.org/) >= 1.12
-- [ase](https://wiki.fysik.dtu.dk/ase/) >= 3.15.0
-- [periodictable](https://pypi.org/project/periodictable/) >= 1.5.0
-- for a direct MD simulation, make sure the `LD_LIBRARY_PATH` includes path to `src` directory.
+- dependencies: [numpy](https://www.numpy.org/), [ase](https://wiki.fysik.dtu.dk/ase/), [periodictable](https://pypi.org/project/periodictable/)
+- for MD simulations, make sure the `LD_LIBRARY_PATH` includes path to `src` directory.
 
 How to install:
 ```python
-python setup.py install  # dependencies may be automatically installed
+python setup.py install  # dependencies may be installed automatically
 ```
 
 How to use:
 
-```Python
+```python
 import pyfmd
 ```
 

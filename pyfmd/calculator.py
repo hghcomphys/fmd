@@ -119,6 +119,12 @@ class Calculator:
         self._lib.fmd_pot_apply(self._sys_none, atom_kind1, atom_kind2, potential)
         return self
 
+    def get_potential_eam_lattice_parameter(self, potential, element):
+        """Get eam potential lattice parameter for specific element."""
+        self._lib.fmd_pot_eam_getLatticeParameter.argtypes = (ct.c_void_p, ct.c_void_p, ct.c_char_p)
+        self._lib.fmd_pot_eam_getLatticeParameter.restype = ct.c_double
+        return self._lib.fmd_pot_eam_getLatticeParameter(self._sys_none, potential, str(element).encode("utf-8"))
+
     # Box ----------------------------------------
     @property
     def box_size(self):
