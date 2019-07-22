@@ -1151,7 +1151,7 @@ void fmd_box_setSubDomains(fmd_t *md, int dimx, int dimy, int dimz)
     }
 }
 
-fmd_t *fmd_sys_create()
+fmd_t *fmd_create()
 {
     fmd_t *md = (fmd_t *)malloc(sizeof(fmd_t));
 
@@ -1446,7 +1446,7 @@ void fmd_dync_setBerendsenThermostatParameter(fmd_t *md, double parameter)
     md->BerendsenThermostatParam = parameter;
 }
 
-void fmd_sys_free(fmd_t *md, int finalizeMPI)
+void fmd_free(fmd_t *md, int finalizeMPI)
 {
     fmd_subd_free(md);
     fmd_potsys_free(md);

@@ -63,16 +63,16 @@ class Calculator:
 
     # FMD-system instance ----------------------------
     def _create_system(self):
-        """Create an fmd-system instance."""
-        self._lib.fmd_sys_create.argtype = ()
-        self._lib.fmd_sys_create.restype = ct.c_void_p
-        return self._lib.fmd_sys_create()
+        """Create an fmd instance."""
+        self._lib.fmd_create.argtype = ()
+        self._lib.fmd_create.restype = ct.c_void_p
+        return self._lib.fmd_create()
 
     def free_system(self, finalize_mpi=True):
-        """Release memory taken for the fmd-system instance (including subdomain and all particles)."""
+        """Release memory taken for the fmd instance (including subdomain and all particles)."""
         if self._sys is not None:
-            self._lib.fmd_sys_free.argtypes = (ct.c_void_p, ct.c_int)
-            self._lib.fmd_sys_free(self._sys, int(finalize_mpi))
+            self._lib.fmd_free.argtypes = (ct.c_void_p, ct.c_int)
+            self._lib.fmd_free(self._sys, int(finalize_mpi))
             self._sys = None  # set None flag for fmd-system pointer
 
     def get_potential_cutoff(self, potential):
