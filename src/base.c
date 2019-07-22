@@ -1176,6 +1176,9 @@ fmd_t *fmd_create()
     md->boxSizeDetermined = 0;
     md->PBCdetermined = 0;
     md->isRootProcess = 0;
+    md->eventHandler = NULL;
+    md->timers = NULL;
+    md->timers_num = 0;
     md->_oldNumberOfParticles = -1;
     md->_fileIndex = 0;
     md->_oldTotalMDEnergy = 0.0;
@@ -1344,6 +1347,7 @@ double fmd_dync_getTime(fmd_t *md)
 void fmd_dync_incTime(fmd_t *md)
 {
     md->mdTime += md->delta_t;
+    if (md->eventHandler != NULL) fmd_timer_sendTimerTickEvents(md);
 }
 
 void fmd_dync_equilibrate(fmd_t *md, int groupID, double duration, double strength)
@@ -1368,6 +1372,7 @@ void fmd_dync_equilibrate(fmd_t *md, int groupID, double duration, double streng
         fmd_dync_velocityVerlet_takeLastStep(md);
 
         md->mdTime += md->delta_t;
+        if (md->eventHandler != NULL) fmd_timer_sendTimerTickEvents(md);
     }
     // end of the time loop
     md->mdTime = 0.0;
@@ -1457,4 +1462,9 @@ void fmd_free(fmd_t *md, int finalizeMPI)
         MPI_Finalized(&isMPIFinalized);
         if (!isMPIFinalized) MPI_Finalize();
     }
+}
+
+void fmd_setEventHandler(fmd_t *md, fmd_EventHandler_t func)
+{
+    md->eventHandler = func;
 }

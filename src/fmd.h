@@ -36,6 +36,13 @@ typedef enum
 
 typedef char *fmd_string_t;
 
+typedef enum
+{
+    FMD_EVENT_TIMERTICK
+} fmd_event_t;
+
+typedef void (*fmd_EventHandler_t)(fmd_t *md, fmd_event_t event, unsigned param);
+
 // functions
 
 void fmd_matt_addVelocity(fmd_t *md, int groupID, double vx, double vy, double vz);
@@ -76,12 +83,15 @@ void fmd_pot_apply(fmd_t *md, unsigned atomkind1, unsigned atomkind2, fmd_pot_t 
 void fmd_subd_init(fmd_t *md);
 void fmd_subd_free(fmd_t *md);
 
+unsigned fmd_timer_newSimple(fmd_t *md, double start, double interval, double stop);
+
 double fmd_proc_getWallTime(fmd_t *md);
 int fmd_proc_isMD(fmd_t *md);
 int fmd_proc_isRoot(fmd_t *md);
 
 fmd_t *fmd_create();
 void fmd_free(fmd_t *md, int finalizeMPI);
+void fmd_setEventHandler(fmd_t *md, fmd_EventHandler_t func);
 
 double fmd_dync_getTimeStep(fmd_t *md);
 void fmd_dync_setTimeStep(fmd_t *md, double timeStep);

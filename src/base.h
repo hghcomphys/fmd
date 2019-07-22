@@ -158,12 +158,23 @@ typedef enum
 } fmd_SaveConfigMode_t;
 
 typedef struct fmd_t fmd_t;
+typedef struct fmd_timer_t fmd_timer_t;
+
+typedef enum
+{
+    FMD_EVENT_TIMERTICK
+} fmd_event_t;
+
+typedef void (*fmd_EventHandler_t)(fmd_t *md, fmd_event_t event, unsigned param);
 
 struct fmd_t
 {
     TSubDomain subDomain;
     potsys_t potsys;
     TCell ***global_grid;
+    fmd_EventHandler_t eventHandler;
+    unsigned timers_num;
+    fmd_timer_t *timers;
     int globalGridExists;
     int boxSizeDetermined;
     int PBCdetermined;
