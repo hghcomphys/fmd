@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
     fmd_t *md;
 
     // create an fmd-system instance
-    md = fmd_sys_create();
+    md = fmd_create();
 
     // set size of the simulation box (in Angstrom)
     double lx, ly, lz;
@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
        the function fmd_proc_isMD() can be called only after fmd_box_setSubDomains() */
     if (! fmd_proc_isMD(md))
     {
-        fmd_sys_free(md, 1);
+        fmd_free(md, 1);
         return 0;
     }
 
@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
 
     // release memory taken for the fmd-system instance (including subdomain and all particles)
     // also finalize MPI
-    fmd_sys_free(md, 1);
+    fmd_free(md, 1);
 
     return 0;
 }
