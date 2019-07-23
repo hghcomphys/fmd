@@ -22,31 +22,33 @@ FMD is a growing project. At the moment, its features and capabilities include:
 
 While all features of the core can be accessed via PyFMD, currently the core cannot directly use features which are added by PyFMD. So, for example, if you would like to work with a Body-Centered Cubic (bcc) structure in a C program, you have to create and save it with a small Python code which uses PyFMD, and then load the saved structure in your C program from your storage device.
 
-## Compiling the core
+## Installing the core
 
 The core part of FMD depends on
 
 - MPI (e.g. OpenMPI or MPICH)
 - GNU Scientific Library
 
-which means that the binary files and header files of these libraries have to be installed so that you can compile the core. You will also need an installed C compiler.
-
-To compile the core in Linux or hopefully any other Unix-like environment, open the terminal/[CLI](https://en.wikipedia.org/wiki/Command-line_interface) and change the current directory to `src`. Then simply enter the following command:
+To install the core on Linux or hopefully any other Unix-like environment, open the terminal/[CLI](https://en.wikipedia.org/wiki/Command-line_interface) and change the current directory to `src`. Then simply enter the following command:
 
 ```
-make
+make install
 ```
 
-This compiles the core and makes `libfmd.so` in the `src` directory. This binary file and the header file `fmd.h`, which is already placed in `src` directory, are needed for linking FMD to your C programs.
+The core can aslo be uninstalled by
+
+```
+make uninstall
+```
 
 ## Using PyFMD
 
 Requirements:
 
 - dependencies: [numpy](https://www.numpy.org/), [ase](https://wiki.fysik.dtu.dk/ase/), [periodictable](https://pypi.org/project/periodictable/)
-- for MD simulations, make sure the `LD_LIBRARY_PATH` includes path to `src` directory.
+- for MD simulations, the core part of FMD must be installed.
 
-How to install:
+How to install PyFMD:
 ```python
 python setup.py install  # dependencies may be installed automatically
 ```

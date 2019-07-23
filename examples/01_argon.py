@@ -1,7 +1,7 @@
 """PyFMD
 
-This example demonstrates an MD simulation of liquid Argon using Lennard-Jones potential.
-Beforehand, make sure that PyFMD is installed and properly linked to the FMD library file.
+This example demonstrates an MD simulation of Argon using Lennard-Jones potential.
+Before running it, make sure that PyFMD and the core part of FMD are both installed.
 
 How to run:
 

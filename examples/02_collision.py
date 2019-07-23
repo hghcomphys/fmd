@@ -1,8 +1,9 @@
 """PyFMD example
 
-This example simulates collision between two identical fcc-copper crystals in NVE ensemble.
+This example simulates collision between two nanocrystals (Ar & Cu) in NVE ensemble.
+Before running it, make sure that PyFMD and the core part of FMD are both installed.
 
-How to execute:
+How to run:
 
     $ mpirun -n 2 python 02_collision.py
 """

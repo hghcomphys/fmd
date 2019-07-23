@@ -1,21 +1,20 @@
-/* Assuming that FMD is already compiled in the src directory, this example
-   can be compiled with the following command:
+/* Assuming that FMD is already installed, this example can be compiled by
 
-   $ gcc 01_argon.c -L../src/ -Wl,-R../src/ -lfmd -lm -O3 -o 01_argon.x
+   $ gcc 01_argon.c -lfmd -lm -O3 -o 01_argon.x
 
-   and can be executed by
+   and executed by
 
    $ mpirun -n 2 ./01_argon.x
 */
 
 #include <math.h>
-#include "../src/fmd.h"
+#include <fmd.h>
 
 int main(int argc, char *argv[])
 {
     fmd_t *md;
 
-    // create an fmd-system instance
+    // create an FMD instance
     md = fmd_create();
 
     // set size of the simulation box (in Angstrom)
@@ -81,7 +80,7 @@ int main(int argc, char *argv[])
     fmd_dync_updateForces(md);
 
     // the time loop starts here
-    // fmd_dync_getTime() returns current internal time of the fmd-system instance
+    // fmd_dync_getTime() returns current internal time of the FMD instance
     while (fmd_dync_getTime(md) < final_time)
     {
         // save configuration every 40 femtoseconds
@@ -113,7 +112,7 @@ int main(int argc, char *argv[])
     // another report
     fmd_io_printf(md, "The run took about %.3f seconds to finish.\n", fmd_proc_getWallTime(md));
 
-    // release memory taken for the fmd-system instance (including subdomain and all particles)
+    // release memory taken for the FMD instance (including subdomain and all particles)
     // also finalize MPI
     fmd_free(md, 1);
 
