@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     //fmd_io_setSaveDirectory(md, "output/");
 
     // let configurations be saved as XYZ files
-    fmd_io_setSaveConfigMode(md, SCM_XYZ_PARTICLESNUM);
+    fmd_io_setSaveConfigMode(md, FMD_SCM_XYZ_PARTICLESNUM);
 
     // set Berendsen thermostat parameter
     fmd_dync_setBerendsenThermostatParameter(md, 2e-2);

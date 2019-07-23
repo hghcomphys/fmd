@@ -151,10 +151,10 @@ typedef struct
 
 typedef enum
 {
-    SCM_XYZ_PARTICLESNUM,
-    SCM_XYZ_SEPARATE,
-    SCM_CSV,
-    SCM_VTF
+    FMD_SCM_XYZ_PARTICLESNUM,
+    FMD_SCM_XYZ_SEPARATE,
+    FMD_SCM_CSV,
+    FMD_SCM_VTF
 } fmd_SaveConfigMode_t;
 
 typedef struct fmd_t fmd_t;

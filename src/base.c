@@ -966,7 +966,7 @@ void fmd_matt_saveConfiguration(fmd_t *md)
 
         switch (md->saveConfigMode)
         {
-            case SCM_XYZ_PARTICLESNUM:
+            case FMD_SCM_XYZ_PARTICLESNUM:
                 if (md->totalNoOfParticles != md->_oldNumberOfParticles)
                 {
                     if (md->_oldNumberOfParticles != -1) fclose(md->configFilep);
@@ -977,13 +977,13 @@ void fmd_matt_saveConfiguration(fmd_t *md)
                 }
                 break;
 
-            case SCM_XYZ_SEPARATE:
+            case FMD_SCM_XYZ_SEPARATE:
                 sprintf(configPath, "%s%05d.xyz", md->saveDirectory, md->_fileIndex++);
                 md->configFilep = fopen(configPath, "w");
                 handleFileOpenError(md->configFilep, configPath);
                 break;
 
-            case SCM_CSV:
+            case FMD_SCM_CSV:
                 sprintf(configPath, "%s%05d.csv", md->saveDirectory, md->_fileIndex++);
                 md->configFilep = fopen(configPath, "w");
                 handleFileOpenError(md->configFilep, configPath);
@@ -997,7 +997,7 @@ void fmd_matt_saveConfiguration(fmd_t *md)
                 }
                 break;
 
-            case SCM_VTF:
+            case FMD_SCM_VTF:
             {
                 int atomID = 0;
                 sprintf(configPath, "%s%05d.vtf", md->saveDirectory, md->_fileIndex++);
@@ -1037,7 +1037,7 @@ void fmd_matt_saveConfiguration(fmd_t *md)
             }
         }
 
-        if (md->saveConfigMode == SCM_XYZ_SEPARATE || md->saveConfigMode == SCM_XYZ_PARTICLESNUM)
+        if (md->saveConfigMode == FMD_SCM_XYZ_SEPARATE || md->saveConfigMode == FMD_SCM_XYZ_PARTICLESNUM)
         {
             fprintf(md->configFilep, "%d\n\n", md->totalNoOfParticles);
             for (i=0; i < md->potsys.atomkinds_num; i++)
@@ -1052,8 +1052,8 @@ void fmd_matt_saveConfiguration(fmd_t *md)
         }
         free(globalData);
 
-        if (md->saveConfigMode == SCM_XYZ_SEPARATE || md->saveConfigMode == SCM_CSV ||
-         md->saveConfigMode == SCM_VTF)
+        if (md->saveConfigMode == FMD_SCM_XYZ_SEPARATE || md->saveConfigMode == FMD_SCM_CSV ||
+         md->saveConfigMode == FMD_SCM_VTF)
             fclose(md->configFilep);
     }
 }

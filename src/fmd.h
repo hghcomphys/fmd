@@ -28,10 +28,10 @@ typedef struct fmd_pot_t fmd_pot_t;
 
 typedef enum
 {
-    SCM_XYZ_PARTICLESNUM,
-    SCM_XYZ_SEPARATE,
-    SCM_CSV,
-    SCM_VTF
+    FMD_SCM_XYZ_PARTICLESNUM,
+    FMD_SCM_XYZ_SEPARATE,
+    FMD_SCM_CSV,
+    FMD_SCM_VTF
 } fmd_SaveConfigMode_t;
 
 typedef char *fmd_string_t;
